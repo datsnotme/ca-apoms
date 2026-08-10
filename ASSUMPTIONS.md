@@ -1097,7 +1097,7 @@ fix list below is evidence-based rather than a guess at what "hardening" should 
   `delete()` now check department ownership the same way `CurriculumPolicy::view()` already did,
   rather than only checking the blanket `curricula.manage` permission.
 
-**Fixed — N+1 queries (2 of 4 found; see "deliberately not fixed" below for the other 2)**:
+**Fixed — N+1 queries (all 4 found, across two separate passes)**:
 - `FacultyWorkloadService::summaryFor()` re-ran a full `sectionsFor()` query (itself several
   eager-loaded relations) once per faculty member — an M-query N+1 hit on every Faculty Workload
   dashboard load and every Faculty Workload report/export. Rewritten to batch one
@@ -1106,25 +1106,37 @@ fix list below is evidence-based rather than a guess at what "hardening" should 
 - `ReportService::facultyWorkload()` was missing `->with('department:id,name')` on the faculty
   query feeding into the summary above, causing one extra lazy `Department` lookup per faculty
   member on top of the M-query problem. One-line fix.
+- `GraduationCandidateService::identifyEligibleStudents()` and `AtRiskController::index()` (via
+  `ProgressAlertService::syncAlertsForScope()`) each ran `ProgressComputationService`'s checklist
+  computation (multiple queries) plus a separate deficiency-count query **per student in scope**,
+  on every visit to the "nominate a candidate" page and the Academic Progress page respectively.
+  Originally left deliberately unfixed during this Phase 8D pass (see below for the reasoning at
+  the time) and fixed in a later, dedicated pass: `ProgressComputationService::preloadForStudents()`
+  now batches the three genuinely per-student-varying query sources — the default grading scale
+  (identical for every student, memoized once), each distinct curriculum's course list (shared by
+  every student on that curriculum, one query per distinct curriculum instead of one per student),
+  and every student's own enrollment/grade history (one `whereIn`-batched query for the whole
+  collection instead of one per student) — into a single call before either hot loop runs, plus
+  `withCount()` for the deficiency count. Two real bugs surfaced during that fix and are worth
+  recording: `Collection::merge()` re-indexes integer keys via its `array_merge()` backing, which
+  silently corrupted a cache keyed by student ID (fixed by switching to `union()`, which preserves
+  them); and the batch preload originally warmed the grading-scale cache unconditionally, which
+  turned "zero students in scope" into a hard 500 via `GradingScale::default()`'s `firstOrFail()`
+  instead of the harmless no-op it was before (fixed with an early return on an empty collection).
+  `checklist()`'s own *result* is deliberately NOT memoized per student on top of this — an early
+  version of the fix did, and it broke `syncDeficiencies()` being called a second time for the
+  same student after a retake was recorded, since the second call silently returned the first
+  call's stale rows. Only the three inputs that never change mid-request (grading scale,
+  curriculum definition, one preloaded batch's own attempts) are cached.
 
-**Deliberately not fixed — documented instead**: two deeper N+1 patterns were found and left
-alone rather than rewritten mid-hardening-pass:
-- `GraduationCandidateService::identifyEligibleStudents()` runs `ProgressComputationService`
-  (multiple queries) plus a deficiency count **per active student college-wide**, on every visit
-  to the "nominate a candidate" page.
-- `AtRiskController::index()` calls `ProgressAlertService::syncAlerts()` **per student in
-  scope**, each of which runs GWA/deficiency computation plus a DB transaction, on every visit to
-  the Academic Progress page.
-
-  Both are real, measurable costs at scale, but both sit inside already-shipped, already-tested
-  business logic from Phase 3/4 (`ProgressComputationService`, `ProgressAlertService`) built
-  under this project's explicit "compute on demand" philosophy — rewriting them to batch across a
-  whole cohort is a real refactor, not a one-line fix, and risks regressing tested behavior for a
-  performance win that only matters once a department's active student count is large enough to
-  notice. Documented here rather than fixed so the tradeoff is visible and deliberate, not
-  silently skipped — this is the same "leave it a known, written-down limitation rather than a
-  risky mid-hardening rewrite" call the project has made before (e.g. Phase 3's explicit deferral
-  of a `student_progress_snapshots` table until something actually needs point-in-time history).
+At the time of the original Phase 8D pass, both were deliberately left alone rather than rewritten
+mid-hardening-pass, since they sit inside already-shipped, already-tested business logic from
+Phase 3/4 built under this project's explicit "compute on demand" philosophy, and batching across
+a whole cohort was judged a real refactor, not a one-line fix — this is the same "leave it a
+known, written-down limitation rather than a risky mid-hardening rewrite" call the project has
+made before (e.g. Phase 3's explicit deferral of a `student_progress_snapshots` table until
+something actually needs point-in-time history). The fix above was done later, as its own
+dedicated pass with full regression coverage, rather than folded into Phase 8D.
 
 **Accessibility pass** (Dashboard, a list page, a create form, a modal — chosen as one
 representative page per UI pattern rather than an exhaustive sweep of all ~80 pages, given the
