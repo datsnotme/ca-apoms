@@ -48,7 +48,14 @@ class ProgressAlertService
     {
         $alerts = [];
 
-        $deficiencyCount = $student->deficiencies()->whereNull('resolved_at')->count();
+        // Uses the eager-loaded count from syncAlertsForScope()'s withCount()
+        // when available (the common, batch-evaluated path); falls back to a
+        // direct query for a lone evaluate() call outside that scope, e.g.
+        // StudentProgressController::show()'s single-student sync. Cast
+        // explicitly since withCount()'s aggregate can come back as a
+        // numeric string depending on DB driver.
+        $deficiencyCount = (int) ($student->unresolved_deficiency_count
+            ?? $student->deficiencies()->whereNull('resolved_at')->count());
 
         if ($deficiencyCount >= self::DEFICIENCY_WARNING_THRESHOLD) {
             $alerts[] = [
@@ -127,10 +134,14 @@ class ProgressAlertService
      */
     public function syncAlertsForScope(?int $departmentId = null, ?int $adviserId = null): void
     {
-        Student::query()
+        $students = Student::query()
             ->when($departmentId, fn (Builder $q) => $q->where('department_id', $departmentId))
             ->when($adviserId, fn (Builder $q) => $q->where('adviser_id', $adviserId))
-            ->get()
-            ->each(fn (Student $student) => $this->syncAlerts($student));
+            ->withCount(['deficiencies as unresolved_deficiency_count' => fn ($q) => $q->whereNull('resolved_at')])
+            ->get();
+
+        $this->progress->preloadForStudents($students);
+
+        $students->each(fn (Student $student) => $this->syncAlerts($student));
     }
 }

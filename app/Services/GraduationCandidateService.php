@@ -31,16 +31,22 @@ class GraduationCandidateService
         $alreadyCandidateIds = GraduationCandidate::where('status', '!=', GraduationCandidateStatus::Rejected->value)
             ->pluck('student_id');
 
-        return Student::query()
+        $students = Student::query()
             ->where('status', 'active')
             ->whereNotIn('id', $alreadyCandidateIds)
             ->whereNotNull('curriculum_id')
-            ->get()
+            ->withCount(['deficiencies as unresolved_deficiency_count' => fn ($q) => $q->whereNull('resolved_at')])
+            ->get();
+
+        $this->progress->preloadForStudents($students);
+
+        return $students
             ->filter(function (Student $student) {
                 $completion = $this->progress->completionPercentage($student);
-                $deficiencyCount = $student->deficiencies()->whereNull('resolved_at')->count();
 
-                return $completion >= 100.0 && $deficiencyCount === 0;
+                // withCount()'s aggregate can come back as a numeric string
+                // depending on DB driver — cast before the strict comparison.
+                return $completion >= 100.0 && (int) $student->unresolved_deficiency_count === 0;
             })
             ->values();
     }

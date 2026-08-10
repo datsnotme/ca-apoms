@@ -14,24 +14,114 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Computes a student's curriculum-checklist status on demand (never
- * cached — see ASSUMPTIONS.md) and syncs the one piece that *is*
- * persisted, academic_deficiencies, since a deficiency needs a resolution
- * workflow to attach to.
+ * cached across requests — see ASSUMPTIONS.md) and syncs the one piece
+ * that *is* persisted, academic_deficiencies, since a deficiency needs a
+ * resolution workflow to attach to.
+ *
+ * Within a single request, results ARE memoized per student/curriculum/
+ * grading-scale on this instance — none of that underlying data is
+ * written by any code path that also reads it back in the same request,
+ * so this changes query count, not behavior. `preloadForStudents()` lets
+ * a caller that's about to loop over many students (e.g.
+ * GraduationCandidateService, ProgressAlertService::syncAlertsForScope())
+ * batch the per-student queries into one each, instead of N.
  */
 class ProgressComputationService
 {
+    private ?Collection $scaleValuesCache = null;
+
+    /** @var array<int, Collection<int, CurriculumCourse>> keyed by curriculum_id */
+    private array $curriculumCoursesCache = [];
+
+    /** @var Collection<int, Collection<int, Collection<int, array<string, mixed>>>>|null keyed by student_id, set only after preloadForStudents() */
+    private ?Collection $attemptsCache = null;
+
+    /**
+     * Which student IDs preloadForStudents() has actually fetched attempts
+     * for — distinct from $attemptsCache's own keys, since a student with
+     * zero enrollment courses is legitimately absent from $attemptsCache
+     * after a real preload. Checking this instead of "is $attemptsCache
+     * non-null" stops a student outside the preloaded batch from silently
+     * reading back an empty collection instead of falling through to its
+     * own query, if this service instance is ever reused across an
+     * unrelated batch and a single-student call in the same request.
+     *
+     * Note: checklist()'s own *result* is deliberately NOT memoized per
+     * student, unlike the caches above. A student's enrollment/grade data
+     * can legitimately change between two checklist()-derived calls on the
+     * same service instance (e.g. syncDeficiencies() called again after a
+     * retake is recorded — see ProgressComputationTest), so only the
+     * inputs that never change mid-request (grading scale, curriculum
+     * definition, and one preloaded batch's own attempts) are cached here.
+     *
+     * @var array<int, true> keyed by student_id
+     */
+    private array $preloadedStudentIds = [];
+
+    /**
+     * Batch-fetches everything checklist() would otherwise fetch once per
+     * student — the default grading scale (identical for every student),
+     * each distinct curriculum's course list (shared by every student on
+     * that curriculum), and every given student's enrollment/grade
+     * history (the one part that's genuinely per-student, now one query
+     * for the whole collection instead of one per student). Safe to call
+     * with any Student collection; students without a curriculum_id are
+     * simply skipped, matching checklist()'s own early-return for them.
+     *
+     * A genuinely empty collection is a true no-op, same as the loop this
+     * replaces never having anything to iterate — deliberately does NOT
+     * touch GradingScale::default() in that case, since that scope uses
+     * firstOrFail() and would turn "no students in scope" into a hard
+     * error on any install/test that hasn't seeded a default grading
+     * scale yet (a real regression this caused before this guard existed:
+     * DashboardController calls syncAlertsForScope() on every visit,
+     * including for a brand new account with zero students).
+     *
+     * @param  Collection<int, Student>  $students
+     */
+    public function preloadForStudents(Collection $students): void
+    {
+        if ($students->isEmpty()) {
+            return;
+        }
+
+        $this->scaleValues();
+
+        $curriculumIds = $students->pluck('curriculum_id')->filter()->unique()->values();
+
+        if ($curriculumIds->isNotEmpty()) {
+            $this->curriculumCoursesCache += $this->fetchCurriculumCourses($curriculumIds)->all();
+        }
+
+        $studentIds = $students->pluck('id')->values();
+
+        if ($studentIds->isNotEmpty()) {
+            $attemptsByStudent = EnrollmentCourse::query()
+                ->whereHas('studentEnrollment', fn ($q) => $q->whereIn('student_id', $studentIds))
+                ->with(['classSection:id,course_id', 'studentGrade', 'studentEnrollment:id,student_id'])
+                ->get()
+                ->groupBy(fn (EnrollmentCourse $ec) => $ec->studentEnrollment->student_id)
+                ->map(fn (Collection $group) => $this->groupAttemptsByCourse($group));
+
+            // union(), not merge() — merge() is backed by array_merge(), which
+            // re-indexes integer keys (student IDs) instead of preserving
+            // them, silently corrupting this cache's keys.
+            $this->attemptsCache = ($this->attemptsCache ?? collect())->union($attemptsByStudent);
+
+            foreach ($studentIds as $id) {
+                $this->preloadedStudentIds[$id] = true;
+            }
+        }
+    }
+
     public function checklist(Student $student): Collection
     {
         if (! $student->curriculum_id) {
             return collect();
         }
 
-        $curriculumCourses = CurriculumCourse::where('curriculum_id', $student->curriculum_id)
-            ->with('course:id,code,title')
-            ->orderBy('year_level')
-            ->orderBy('sequence_order')
-            ->orderBy('id')
-            ->get();
+        $curriculumCourses = $this->curriculumCoursesCache[$student->curriculum_id]
+            ??= $this->fetchCurriculumCourses(collect([$student->curriculum_id]))->get($student->curriculum_id, collect());
 
         $attemptsByCourse = $this->attemptsByCourse($student);
         $currentYearLevel = $student->yearLevel?->level ?? 0;
@@ -147,12 +237,27 @@ class ProgressComputationService
      */
     private function attemptsByCourse(Student $student): Collection
     {
-        $scaleValues = GradingScale::default()->values->keyBy('value');
+        if (isset($this->preloadedStudentIds[$student->id])) {
+            return $this->attemptsCache->get($student->id, collect());
+        }
 
-        return EnrollmentCourse::query()
+        $attempts = EnrollmentCourse::query()
             ->whereHas('studentEnrollment', fn ($q) => $q->where('student_id', $student->id))
             ->with(['classSection:id,course_id', 'studentGrade'])
-            ->get()
+            ->get();
+
+        return $this->groupAttemptsByCourse($attempts);
+    }
+
+    /**
+     * @param  Collection<int, EnrollmentCourse>  $attempts
+     * @return Collection<int, Collection<int, array<string, mixed>>> keyed by course_id
+     */
+    private function groupAttemptsByCourse(Collection $attempts): Collection
+    {
+        $scaleValues = $this->scaleValues();
+
+        return $attempts
             ->groupBy(fn (EnrollmentCourse $ec) => $ec->classSection->course_id)
             ->map(fn (Collection $group) => $group->map(fn (EnrollmentCourse $ec) => [
                 'enrollment_course_id' => $ec->id,
@@ -161,6 +266,26 @@ class ProgressComputationService
                 'is_official' => $ec->studentGrade?->status?->value === 'finalized',
                 'scale_value' => $ec->studentGrade?->grade ? $scaleValues->get($ec->studentGrade->grade) : null,
             ]));
+    }
+
+    private function scaleValues(): Collection
+    {
+        return $this->scaleValuesCache ??= GradingScale::default()->values->keyBy('value');
+    }
+
+    /**
+     * @param  Collection<int, int>  $curriculumIds
+     * @return Collection<int, Collection<int, CurriculumCourse>> keyed by curriculum_id
+     */
+    private function fetchCurriculumCourses(Collection $curriculumIds): Collection
+    {
+        return CurriculumCourse::whereIn('curriculum_id', $curriculumIds)
+            ->with('course:id,code,title')
+            ->orderBy('year_level')
+            ->orderBy('sequence_order')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('curriculum_id');
     }
 
     private function resolveStatus(Collection $attempts): CourseChecklistStatus
