@@ -14,7 +14,7 @@ class ProgressAlert extends Model
 
     protected $fillable = [
         'student_id', 'alert_type', 'severity', 'message', 'triggered_at',
-        'acknowledged_by', 'acknowledged_at', 'resolved_at',
+        'acknowledged_by', 'acknowledged_at', 'resolved_at', 'notified_at',
     ];
 
     protected function casts(): array
@@ -25,6 +25,7 @@ class ProgressAlert extends Model
             'triggered_at' => 'datetime',
             'acknowledged_at' => 'datetime',
             'resolved_at' => 'datetime',
+            'notified_at' => 'datetime',
         ];
     }
 

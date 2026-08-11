@@ -103,8 +103,9 @@ class ProgressAlertService
                 $existing = ProgressAlert::where('student_id', $student->id)->where('alert_type', $alert['type']->value)->first();
 
                 // A previously-resolved alert re-triggering is a fresh
-                // episode — it needs to be acknowledged again, not inherit
-                // the acknowledgment from whatever caused it last time.
+                // episode — it needs to be acknowledged (and proactively
+                // notified) again, not inherit the acknowledgment/
+                // notification state from whatever caused it last time.
                 $reopening = $existing && $existing->resolved_at !== null;
 
                 ProgressAlert::updateOrCreate(
@@ -114,7 +115,7 @@ class ProgressAlertService
                         'message' => $alert['message'],
                         'triggered_at' => now(),
                         'resolved_at' => null,
-                        ...($reopening ? ['acknowledged_by' => null, 'acknowledged_at' => null] : []),
+                        ...($reopening ? ['acknowledged_by' => null, 'acknowledged_at' => null, 'notified_at' => null] : []),
                     ]
                 );
             }
