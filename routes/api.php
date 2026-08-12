@@ -14,4 +14,5 @@ Route::middleware(['auth:sanctum', 'permission:sync.manage'])
     ->group(function () {
         Route::get('status', [SyncController::class, 'status'])->name('status');
         Route::get('pull', [SyncController::class, 'pull'])->name('pull');
+        Route::post('push', [SyncController::class, 'push'])->name('push');
     });

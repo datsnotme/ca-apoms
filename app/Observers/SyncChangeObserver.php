@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\SyncChange;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use WeakMap;
 
 /**
  * Registered against every sync-enabled model (see AppServiceProvider::boot()).
@@ -12,15 +13,36 @@ use Illuminate\Support\Str;
  * instance, not hardcoded — so adding a new synced model later (Phase 6)
  * is one observe() call, not a new observer class.
  *
- * Phase 1 only: this records local writes into the sync_changes outbox and
- * keeps uuid/sync_version correct. It does not yet know about devices —
- * device_id stays null for ordinary web-session writes until Phase 2 adds a
- * device-auth context to attribute writes to. user_id is populated from the
- * authenticated web user when one exists (console/seeder writes leave it
- * null, which is fine — nothing consumes these rows until Phase 2).
+ * Records local writes into the sync_changes outbox and keeps
+ * uuid/sync_version correct. Since Phase 3, each outbox row also captures
+ * changed_fields (which business columns this write touched) and
+ * base_version (the row's version immediately before this write) — the
+ * inputs SyncService needs for a three-way merge/conflict decision.
+ *
+ * device_id stays null for ordinary web-session writes — nothing sets a
+ * "current device" context for those, only the sync API's own apply path
+ * does (and applies quietly, bypassing this observer entirely — see
+ * SyncService). user_id comes from the authenticated web user when one
+ * exists.
  */
 class SyncChangeObserver
 {
+    /**
+     * Transient per-update state, keyed by model instance rather than
+     * stored as a model attribute — setting a non-column property via
+     * Eloquent's magic setter would get swept into the same save()'s
+     * UPDATE statement and fail with an unknown-column error. A WeakMap
+     * avoids that entirely and needs no manual cleanup.
+     *
+     * @var WeakMap<Model, array{changed_fields: array<int, string>, base_version: int}>
+     */
+    private WeakMap $pendingUpdates;
+
+    public function __construct()
+    {
+        $this->pendingUpdates = new WeakMap;
+    }
+
     public function creating(Model $model): void
     {
         if (empty($model->uuid)) {
@@ -34,31 +56,37 @@ class SyncChangeObserver
 
     public function created(Model $model): void
     {
-        $this->recordChange($model, 'created', $model->sync_version);
+        $this->recordChange($model, 'created', $model->sync_version, changedFields: null, baseVersion: null);
     }
 
     public function updating(Model $model): void
     {
+        $baseVersion = (int) $model->getOriginal('sync_version');
+
         // Ignore changes that only touch sync-metadata columns themselves —
         // those are housekeeping, not a business-data change that should
-        // bump the version or spawn a new outbox row. Guards against a
-        // future Phase 2 apply-incoming-change path (which sets these
-        // columns directly) causing a version to bump twice.
-        $businessColumnsChanged = collect($model->getDirty())
+        // bump the version or spawn a new outbox row.
+        $changedFields = collect($model->getDirty())
             ->keys()
             ->reject(fn ($key) => in_array($key, ['uuid', 'sync_version', 'origin_device_id', 'updated_at']))
-            ->isNotEmpty();
+            ->values();
 
-        if ($businessColumnsChanged) {
-            $model->sync_version = (int) $model->sync_version + 1;
+        if ($changedFields->isNotEmpty()) {
+            $model->sync_version = $baseVersion + 1;
+            $this->pendingUpdates[$model] = ['changed_fields' => $changedFields->all(), 'base_version' => $baseVersion];
         }
     }
 
     public function updated(Model $model): void
     {
-        if ($model->wasChanged('sync_version')) {
-            $this->recordChange($model, 'updated', $model->sync_version);
+        if (! isset($this->pendingUpdates[$model])) {
+            return;
         }
+
+        ['changed_fields' => $changedFields, 'base_version' => $baseVersion] = $this->pendingUpdates[$model];
+        unset($this->pendingUpdates[$model]);
+
+        $this->recordChange($model, 'updated', $model->sync_version, $changedFields, $baseVersion);
     }
 
     public function deleted(Model $model): void
@@ -68,12 +96,16 @@ class SyncChangeObserver
         // deleted_at; for a forceDelete() the row is already gone from the
         // DB by the time this fires, so attempting another UPDATE here
         // would be a no-op at best. The 'deleted' operation itself is the
-        // meaningful signal — Phase 2+ treats it as authoritative regardless
-        // of the exact version number attached.
-        $this->recordChange($model, 'deleted', (int) $model->sync_version);
+        // meaningful signal — SyncService treats it as authoritative
+        // regardless of the exact version number attached, and there's no
+        // field-level diff to speak of for a deletion.
+        $this->recordChange($model, 'deleted', (int) $model->sync_version, changedFields: null, baseVersion: null);
     }
 
-    private function recordChange(Model $model, string $operation, int $version): void
+    /**
+     * @param  array<int, string>|null  $changedFields
+     */
+    private function recordChange(Model $model, string $operation, int $version, ?array $changedFields, ?int $baseVersion): void
     {
         SyncChange::create([
             'entity_table' => $model->getTable(),
@@ -82,6 +114,8 @@ class SyncChangeObserver
             'device_id' => null,
             'user_id' => auth()->id(),
             'version' => $version,
+            'changed_fields' => $changedFields,
+            'base_version' => $baseVersion,
             'sync_status' => 'pending',
         ]);
     }

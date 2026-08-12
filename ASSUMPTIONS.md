@@ -1259,3 +1259,61 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     two-instance proof: created a `Student` on one running instance, pulled it into a second,
     fully separate instance via real HTTP with the exact same `uuid`, then pulled again and
     confirmed zero duplication (the checkpoint correctly saw nothing new to fetch).
+- **Phase 3 (push + three-way conflict detection, complete)**: `SyncPullService` was renamed to
+  `SyncService` — it now serves both directions, since `applyIncoming()` is the single place either
+  a pull-response or a push-request gets merged in, so the two directions can never disagree about
+  what counts as a conflict. `POST /api/sync/push` (same `auth:sanctum` + `permission:sync.manage`
+  gate) accepts a device's own pending changes and runs them through `applyIncoming()`; `pushTo()`
+  is the client-side orchestration counterpart to Phase 2's `pullFrom()`, tracking its own outbound
+  cursor via a `SyncCheckpoint` row keyed by `"{remote_target}:push"` — a separate row from the pull
+  cursor, since one tracks what's been consumed and the other what's been sent.
+  - **Three-way merge**: every `sync_changes` row now carries `changed_fields` (the business
+    columns that specific write touched) and `base_version` (the entity's `sync_version`
+    immediately before that write) — captured by `SyncChangeObserver`, which passes state between
+    its `updating()`/`updated()` hooks via a `WeakMap`. That only works because `SyncChangeObserver`
+    is bound as a singleton in `AppServiceProvider::register()` — `Model::observe()` registers
+    observer methods as string listeners that Laravel's dispatcher otherwise re-resolves fresh from
+    the container on every single event, which would silently hand `updating()` and `updated()` two
+    different instances with two different empty `WeakMap`s. Safe as a singleton here because this
+    app has no persistent worker (no Octane) — each HTTP request gets a fresh container regardless.
+  - `pendingChangesSince()` collapses a run of changes per entity into one payload entry carrying
+    the *earliest* `base_version` and the *union* of `changed_fields` across the run (from its
+    `updated` rows only — a `created` row elsewhere in the same id-range doesn't null this out,
+    since that create may just be this outbox's own genesis record for an entity the receiver
+    already independently has, e.g. two instances seeded from the same baseline before any sync
+    ran; what matters is the version immediately before the earliest *business* change in range).
+  - `applyIncoming()` classifies each incoming change into one of four outcomes: **fast-forward**
+    (local hasn't changed since the incoming change's `base_version`, or there's no base to check —
+    apply the full snapshot, exactly Phase 2's behavior); **safe merge** (local diverged since base,
+    but touched different fields than the incoming change — apply only the incoming change's
+    fields, via `collect($snapshot)->only($remoteChangedFields)`, leaving local's own edits to its
+    own fields untouched); **hard conflict** (the same field was touched on both sides, or the
+    remote's `changed_fields` is unknowable, or the entity is a `StudentGrade` — grades never
+    auto-merge even on non-overlapping fields, per the spec's principle that a grade must never be
+    silently overwritten); **conflict on delete** (the remote deleted the row after local had
+    already diverged past that point — recorded as a conflict with a `__remote_deleted__` marker in
+    `conflicting_fields` rather than either silently deleting or silently reviving). A repeated
+    conflicting change updates the existing `pending` `SyncConflict` row's snapshots rather than
+    duplicating it. Divergence is detected by comparing against `base_version`, not by comparing raw
+    `sync_version` numbers — once two sides can diverge, each increments its own counter
+    independently, so two genuinely different states can carry the same (or a "higher" local)
+    version number; only `base_version` reliably answers "has local changed since this specific
+    remote write branched off."
+  - **Known, deliberate gap, not solved here**: a double-apply of an already-merged or
+    already-conflicted change re-runs the merge/conflict logic rather than cleanly short-circuiting
+    to "skipped" the way a plain fast-forward does — safe (idempotent in effect, since it reapplies
+    the same field values / refreshes the same conflict snapshot) but not as clean as true
+    idempotency. Not solved because a real per-entity "have I already incorporated this exact write"
+    check would need a vector-clock-style structure this pilot deliberately doesn't build.
+  - Verified: 20 new tests (`SyncServiceTest`, `SyncPushApiTest` — safe merge, overlapping-field
+    conflict, repeated-conflict dedup, grade-always-conflicts, delete-vs-edit conflict, push
+    contract/auth/attribution), full regression green (420/420), and a live two-instance proof
+    across two genuinely separate running instances with real HTTP and real separate MySQL
+    databases: (1) concurrent edits to different `Student` fields on both sides auto-merged
+    bidirectionally with zero conflicts, each side ending up with both edits; (2) concurrent edits
+    to the *same* `Student` field recorded a conflict with correct `local_snapshot`/
+    `remote_snapshot`/`conflicting_fields`, and the receiving side's data was left completely
+    untouched — not silently overwritten; (3) concurrent edits to *different* `StudentGrade` fields
+    (`grade` on one side, `status` on the other — which would auto-merge for any other pilot model)
+    still recorded a conflict, confirming the grades-always-conflict rule holds even without field
+    overlap.

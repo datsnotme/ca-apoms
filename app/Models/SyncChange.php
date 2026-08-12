@@ -14,12 +14,13 @@ class SyncChange extends Model
 {
     protected $fillable = [
         'entity_table', 'entity_uuid', 'operation', 'device_id', 'user_id',
-        'version', 'sync_status', 'synced_at',
+        'version', 'changed_fields', 'base_version', 'sync_status', 'synced_at',
     ];
 
     protected function casts(): array
     {
         return [
+            'changed_fields' => 'array',
             'synced_at' => 'datetime',
         ];
     }
