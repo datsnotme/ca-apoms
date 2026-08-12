@@ -39,6 +39,24 @@ jobs:
       - name: Pint (code style)
         run: ./vendor/bin/pint --test
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Feature tests assert against Inertia responses, which render through
+      # Blade's @vite() directive — that needs public/build/manifest.json to
+      # exist, or every assertInertia() call fails with "Not a valid Inertia
+      # response" even though nothing about the test itself is wrong. Confirmed
+      # by reproducing a fresh clone locally: 70 failures, all this exact
+      # error, all gone once a build exists.
+      - name: Production build (so Inertia responses are valid in tests)
+        run: npm run build
+
       - name: Pest (test suite)
         run: php artisan test
 
