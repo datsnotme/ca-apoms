@@ -80,6 +80,7 @@ export const NAVIGATION: NavItem[] = [
             { label: 'Graduation Requirements', routeName: 'graduation-requirement-templates.index', permission: 'graduation.view' },
             { label: 'Competency Framework', routeName: 'competency-categories.index', permission: 'graduation.view' },
             { label: 'Document Categories', routeName: 'document-categories.index', permission: 'operations.view' },
+            { label: 'System Logo', routeName: 'branding.edit', permission: 'branding.manage' },
         ],
     },
     {

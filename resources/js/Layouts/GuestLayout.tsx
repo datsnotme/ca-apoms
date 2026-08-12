@@ -1,12 +1,20 @@
 import { PropsWithChildren } from 'react';
+import { usePage } from '@inertiajs/react';
+import { PageProps } from '@/types';
 
 export default function Guest({ children }: PropsWithChildren) {
+    const { systemLogoUrl } = usePage<PageProps>().props;
+
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-brand-900 via-brand-800 to-brand-900 px-4">
             <div className="mb-6 flex items-center gap-2">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-400 text-sm font-bold text-brand-900">
-                    CA
-                </span>
+                {systemLogoUrl ? (
+                    <img src={systemLogoUrl} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                ) : (
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold-400 text-sm font-bold text-brand-900">
+                        CA
+                    </span>
+                )}
                 <span className="text-lg font-semibold text-white">CA-APOMS</span>
             </div>
 

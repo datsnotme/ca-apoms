@@ -40,6 +40,7 @@ export type PageProps<
         unread_count: number;
         recent: AppNotification[];
     } | null;
+    systemLogoUrl: string | null;
 };
 
 export interface PaginationLink {

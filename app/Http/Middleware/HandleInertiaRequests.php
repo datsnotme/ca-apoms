@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\College;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -62,6 +63,11 @@ class HandleInertiaRequests extends Middleware
                     ...$n->data,
                 ]),
             ] : null,
+            // Deliberately unauthenticated-visible (unlike auth/
+            // notificationCenter above) — the login page (GuestLayout)
+            // needs it too. A single cheap lookup, not cached, matching
+            // this project's "compute on demand" convention elsewhere.
+            'systemLogoUrl' => fn () => College::query()->first()?->logo_url,
         ];
     }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Academic\ProgramController;
 use App\Http\Controllers\Academic\SemesterController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\Admin\BrandingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Advising\AdvisingController;
 use App\Http\Controllers\Advising\StudentAdvisingRecordController;
@@ -81,7 +82,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 
+    Route::delete('departments/bulk-destroy', [DepartmentController::class, 'destroyMany'])->name('departments.destroyMany');
     Route::resource('departments', DepartmentController::class)->except(['show']);
+    Route::delete('programs/bulk-destroy', [ProgramController::class, 'destroyMany'])->name('programs.destroyMany');
     Route::resource('programs', ProgramController::class)->except(['show']);
     Route::resource('academic-years', AcademicYearController::class)->except(['show']);
     Route::resource('semesters', SemesterController::class)->except(['show']);
@@ -308,6 +311,12 @@ Route::middleware('auth')->group(function () {
         Route::post('backups/{filename}/restore', [BackupController::class, 'restore'])
             ->where('filename', BackupService::FILENAME_PATTERN_ROUTE)
             ->name('backups.restore');
+    });
+
+    Route::middleware('permission:branding.manage')->group(function () {
+        Route::get('branding', [BrandingController::class, 'edit'])->name('branding.edit');
+        Route::post('branding', [BrandingController::class, 'update'])->name('branding.update');
+        Route::delete('branding', [BrandingController::class, 'destroy'])->name('branding.destroy');
     });
 });
 

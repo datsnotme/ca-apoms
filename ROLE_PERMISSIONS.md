@@ -593,3 +593,19 @@ role. `BackupController` has no dedicated Policy class, same reasoning as `Audit
 `ReportController`: authorization is `Route::middleware('permission:backups.manage')` at the route
 layer, and there is no per-backup ownership to adjudicate (a backup file isn't "owned" by the user
 who created it — any Admin can act on any backup).
+
+## Post-Launch: System Logo
+
+One new permission, Admin-only with no partial grant, same shape as `backups.manage`:
+
+| Ability | Admin | Dean | Dept. Head | Faculty |
+|---|---|---|---|---|
+| Upload/change/remove the system logo | ✅ | ⛔ | ⛔ | ⛔ |
+
+`branding.manage` exists only in the seeder's `PERMISSIONS` list, same `users.manage`/
+`backups.manage`-style pattern. `BrandingController` has no dedicated Policy class for the same
+reason as `BackupController` — there is no per-record ownership to adjudicate; it always operates
+on the single seeded `College` row (see `ASSUMPTIONS.md`'s single-college assumption).
+Authorization is `Route::middleware('permission:branding.manage')` at the route layer. The
+rendered logo itself (`College.logo_url`, shared globally via `HandleInertiaRequests`) is visible
+to everyone, including unauthenticated visitors on the login page — only *changing* it is gated.

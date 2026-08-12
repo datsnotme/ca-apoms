@@ -16,18 +16,21 @@ interface Rect {
 /**
  * A dependency-free crop tool: drag to reposition, slider to zoom, always
  * covering the square viewport (like CSS object-fit: cover) so the user can
- * never leave blank space inside the crop circle. Exports a square image —
- * the circle is just a visual guide for how it'll render as an avatar
- * (AppLayout/UpdateProfilePhotoForm both display it with rounded-full).
+ * never leave blank space inside the crop guide. Always exports a square
+ * image — `shape` only changes the guide's visual outline (circle for an
+ * avatar via rounded-full, square for a logo badge via rounded-md) to match
+ * how the result will actually be displayed.
  */
 export default function ImageCropperModal({
     show,
     imageSrc,
+    shape = 'circle',
     onCancel,
     onCropped,
 }: {
     show: boolean;
     imageSrc: string | null;
+    shape?: 'circle' | 'square';
     onCancel: () => void;
     onCropped: (blob: Blob) => void;
 }) {
@@ -170,7 +173,9 @@ export default function ImageCropperModal({
                     )}
 
                     <div
-                        className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/80"
+                        className={`pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/80 ${
+                            shape === 'circle' ? 'rounded-full' : 'rounded-md'
+                        }`}
                         style={{ boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)' }}
                     />
                 </div>

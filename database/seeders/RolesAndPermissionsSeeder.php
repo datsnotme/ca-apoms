@@ -70,6 +70,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // explicit permission row (⛔ for every other role). Not added to any
         // entry in ROLE_PERMISSIONS below — same pattern as `users.manage`.
         'backups.manage',
+        // Post-launch: system logo upload — Admin-only, same shape and
+        // reasoning as `backups.manage` (no per-record ownership to
+        // adjudicate, so no dedicated Policy either — see
+        // BrandingController).
+        'branding.manage',
     ];
 
     /**

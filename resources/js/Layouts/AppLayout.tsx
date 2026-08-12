@@ -62,7 +62,7 @@ export default function AppLayout({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { auth, notificationCenter } = usePage<PageProps>().props;
+    const { auth, notificationCenter, systemLogoUrl } = usePage<PageProps>().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     return (
@@ -70,9 +70,13 @@ export default function AppLayout({
             {sidebarOpen && (
                 <aside className="fixed inset-y-0 left-0 z-30 w-64 overflow-y-auto bg-brand-900 pb-6 print:hidden lg:static lg:shrink-0">
                     <div className="flex h-16 items-center gap-2 px-4">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400 text-sm font-bold text-brand-900">
-                            CA
-                        </span>
+                        {systemLogoUrl ? (
+                            <img src={systemLogoUrl} alt="" className="h-8 w-8 rounded-lg object-cover" />
+                        ) : (
+                            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400 text-sm font-bold text-brand-900">
+                                CA
+                            </span>
+                        )}
                         <span className="text-sm font-semibold text-white">CA-APOMS</span>
                     </div>
                     <nav className="space-y-0.5 px-2">
