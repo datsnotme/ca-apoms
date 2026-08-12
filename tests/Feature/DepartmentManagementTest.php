@@ -54,3 +54,25 @@ test('archiving a department is recorded in the activity log', function () {
         ->where('subject_id', $department->id)
         ->exists())->toBeTrue();
 });
+
+test('an admin can bulk archive multiple departments at once', function () {
+    $departments = Department::factory()->count(3)->create(['college_id' => $this->college->id]);
+
+    $response = $this->actingAs($this->admin)->delete('/departments/bulk-destroy', [
+        'ids' => $departments->pluck('id')->all(),
+    ]);
+
+    $response->assertRedirect('/departments')->assertSessionHas('success', '3 department(s) archived.');
+    $departments->each(fn (Department $d) => $this->assertSoftDeleted('departments', ['id' => $d->id]));
+});
+
+test('a department head cannot bulk delete departments', function () {
+    $department = Department::factory()->create(['college_id' => $this->college->id]);
+    $head = userWithRole(RoleName::DepartmentHead->value, $department);
+
+    $this->actingAs($head)->delete('/departments/bulk-destroy', [
+        'ids' => [$department->id],
+    ])->assertForbidden();
+
+    $this->assertDatabaseHas('departments', ['id' => $department->id, 'deleted_at' => null]);
+});

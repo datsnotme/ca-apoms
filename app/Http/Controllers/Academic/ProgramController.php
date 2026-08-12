@@ -76,4 +76,29 @@ class ProgramController extends Controller
 
         return redirect()->route('programs.index')->with('success', 'Program archived.');
     }
+
+    /**
+     * Same authorization and soft-delete behavior as destroy(), applied to a
+     * batch — see StudentController::destroyMany() for the pattern this
+     * mirrors across every bulk-delete endpoint in the app.
+     */
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:programs,id'],
+        ]);
+
+        $programs = Program::whereIn('id', $validated['ids'])->get();
+
+        foreach ($programs as $program) {
+            $this->authorize('delete', $program);
+        }
+
+        foreach ($programs as $program) {
+            $program->delete();
+        }
+
+        return redirect()->route('programs.index')->with('success', $programs->count().' program(s) archived.');
+    }
 }

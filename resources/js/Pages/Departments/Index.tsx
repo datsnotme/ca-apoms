@@ -6,8 +6,11 @@ import Badge from '@/Components/ui/Badge';
 import EmptyState from '@/Components/ui/EmptyState';
 import Pagination from '@/Components/ui/Pagination';
 import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
+import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
+import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated, PageProps } from '@/types';
 
 interface DepartmentRow {
@@ -30,6 +33,7 @@ export default function Index({
     const { auth } = usePage<PageProps>().props;
     const canManage = auth.user.permissions.includes('departments.manage');
     const [search, setSearch] = useState(filters.search ?? '');
+    const bulk = useBulkSelection(departments.data.map((d) => d.id));
 
     const submitSearch: FormEventHandler = (e) => {
         e.preventDefault();
@@ -64,6 +68,15 @@ export default function Index({
                     </form>
                 </div>
 
+                {canManage && (
+                    <BulkDeleteBar
+                        href={route('departments.destroyMany')}
+                        ids={bulk.selectedIds}
+                        itemLabelPlural="departments"
+                        onDeleted={bulk.clear}
+                    />
+                )}
+
                 {departments.data.length === 0 ? (
                     <EmptyState
                         title="No departments found"
@@ -74,6 +87,15 @@ export default function Index({
                         <table className="w-full text-sm">
                             <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
                                 <tr>
+                                    {canManage && (
+                                        <th scope="col" className="w-10 px-5 py-2.5">
+                                            <Checkbox
+                                                aria-label="Select all departments on this page"
+                                                checked={bulk.allOnPageSelected}
+                                                onChange={bulk.toggleAllOnPage}
+                                            />
+                                        </th>
+                                    )}
                                     <th className="px-5 py-2.5">Code</th>
                                     <th className="px-5 py-2.5">Name</th>
                                     <th className="px-5 py-2.5">Head</th>
@@ -85,6 +107,15 @@ export default function Index({
                             <tbody className="divide-y divide-slate-100">
                                 {departments.data.map((d) => (
                                     <tr key={d.id} className="hover:bg-slate-50">
+                                        {canManage && (
+                                            <td className="px-5 py-2.5">
+                                                <Checkbox
+                                                    aria-label={`Select ${d.name}`}
+                                                    checked={bulk.isSelected(d.id)}
+                                                    onChange={() => bulk.toggle(d.id)}
+                                                />
+                                            </td>
+                                        )}
                                         <td className="px-5 py-2.5 font-mono text-xs">{d.code}</td>
                                         <td className="px-5 py-2.5">{d.name}</td>
                                         <td className="px-5 py-2.5">{d.head?.name ?? '—'}</td>

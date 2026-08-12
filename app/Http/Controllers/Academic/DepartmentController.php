@@ -77,4 +77,29 @@ class DepartmentController extends Controller
 
         return redirect()->route('departments.index')->with('success', 'Department archived.');
     }
+
+    /**
+     * Same authorization and soft-delete behavior as destroy(), applied to a
+     * batch — see StudentController::destroyMany() for the pattern this
+     * mirrors across every bulk-delete endpoint in the app.
+     */
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:departments,id'],
+        ]);
+
+        $departments = Department::whereIn('id', $validated['ids'])->get();
+
+        foreach ($departments as $department) {
+            $this->authorize('delete', $department);
+        }
+
+        foreach ($departments as $department) {
+            $department->delete();
+        }
+
+        return redirect()->route('departments.index')->with('success', $departments->count().' department(s) archived.');
+    }
 }
