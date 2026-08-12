@@ -1228,3 +1228,34 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
   backfill every pre-existing row in the same pass via `chunkById()`. This is an accepted tradeoff,
   not an oversight — adding `doctrine/dbal` as a new dependency for one column constraint wasn't
   judged worth it.
+- **Phase 2 (one-way pull, complete)**: `routes/api.php` (registered in `bootstrap/app.php`'s
+  `withRouting()` — the first API surface this app has ever had), Sanctum-gated (`auth:sanctum` +
+  `permission:sync.manage`) `GET /api/sync/status` and `GET /api/sync/pull`. `SyncPullService`
+  does both sides: `pendingChangesSince()` serves an ID-cursor-based incremental payload (one
+  entry per distinct entity touched, current-state snapshot, not per intermediate write);
+  `applyIncoming()` consumes one (idempotent — a version-guard means re-applying an already-seen
+  or older change is a no-op); `pullFrom()` orchestrates a full pull against a configured remote
+  URL/token, advances a `sync_checkpoints` row, and records a `sync_runs` entry. Device
+  registration is a console command (`sync:register-device`) for now, not a UI — Device
+  Management is Phase 4/6 scope.
+  - **Known, deliberate gap**: pilot models carry foreign keys (`department_id`, `program_id`,
+    `curriculum_id`, ...) into reference tables that aren't themselves synced yet. An incoming
+    `Student` only resolves correctly if both instances already share the same reference-table
+    IDs. Proven honestly, not hidden: the live two-instance test used two genuinely separate
+    MySQL databases with real HTTP between two independently running `php artisan serve`
+    processes, but deliberately seeded matching reference rows by explicit ID
+    (`Department::forceCreate(['id' => 9001, ...])` on both sides) rather than pretending this
+    works for two independently-seeded production instances. Real production use needs the
+    reference tables synced too — Phase 6 (Expansion).
+  - **Known, deliberate gap**: `applyIncoming()` writes are quiet (`saveQuietly()`), which
+    correctly stops `SyncChangeObserver` from re-logging incoming data as a new local change, but
+    also suppresses `StudentGrade`'s own `booted()` hook that writes `grade_change_logs`. A synced
+    grade change doesn't get a local audit-trail entry yet. Laravel has no "suppress this one
+    listener, keep the rest" primitive; doing this properly needs a flag-based opt-out on the
+    observer. Left for Phase 3+, which needs finer-grained event control for push/conflict
+    handling anyway.
+  - Verified: 14 new tests (`SyncPullApiTest`, `SyncPullServiceTest` — auth/permission/shape,
+    idempotent create/update/delete, HTTP-faked `pullFrom()`), full regression green, and a live
+    two-instance proof: created a `Student` on one running instance, pulled it into a second,
+    fully separate instance via real HTTP with the exact same `uuid`, then pulled again and
+    confirmed zero duplication (the checkpoint correctly saw nothing new to fetch).

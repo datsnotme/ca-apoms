@@ -610,7 +610,7 @@ Authorization is `Route::middleware('permission:branding.manage')` at the route 
 rendered logo itself (`College.logo_url`, shared globally via `HandleInertiaRequests`) is visible
 to everyone, including unauthenticated visitors on the login page — only *changing* it is gated.
 
-## Post-Launch: Hybrid Online/LAN/Offline Sync (Phase 1 — Foundation)
+## Post-Launch: Hybrid Online/LAN/Offline Sync (Phase 1 Foundation + Phase 2 Pull)
 
 One new permission, Admin-only with no partial grant, same shape as `backups.manage`/
 `branding.manage` — the Administrator's PC is the designated LAN sync hub, so device registration
@@ -618,13 +618,17 @@ and Sync Center access are Admin-only by design, not just by default:
 
 | Ability | Admin | Dean | Dept. Head | Faculty |
 |---|---|---|---|---|
-| Manage sync devices, view Sync Center, resolve conflicts | ✅ | ⛔ | ⛔ | ⛔ |
+| Manage sync devices, view Sync Center, resolve conflicts, call the sync API | ✅ | ⛔ | ⛔ | ⛔ |
 
 `sync.manage` exists only in the seeder's `PERMISSIONS` list. No dedicated Policy class — same
 reasoning as `BackupController`/`BrandingController`: `devices`, `sync_changes`,
 `sync_checkpoints`, `sync_conflicts`, and `sync_runs` have no per-record ownership to adjudicate
-(they're sync-engine bookkeeping, not user-owned content), so route-level
-`permission:sync.manage` middleware is the whole authorization story once Phase 4 adds routes.
+(they're sync-engine bookkeeping, not user-owned content), so route-level authorization is the
+whole story: `permission:sync.manage` gates the web-facing side (once Phase 4 adds a Sync Center
+UI), and both `auth:sanctum` (device token identity) *and* `permission:sync.manage` together gate
+`routes/api.php`'s sync endpoints, live since Phase 2. A device token is issued to a specific
+`User` (via `sync:register-device`), so it only ever has that user's own permissions — a token
+can never grant more access than the person it represents already has through the normal web app.
 
 **Phase 1 is inert by design** — it adds `uuid`/`sync_version`/`origin_device_id` columns (all
 nullable/defaulted, zero risk to existing behavior) to the pilot table set (`students`,
