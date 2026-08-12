@@ -609,3 +609,36 @@ on the single seeded `College` row (see `ASSUMPTIONS.md`'s single-college assump
 Authorization is `Route::middleware('permission:branding.manage')` at the route layer. The
 rendered logo itself (`College.logo_url`, shared globally via `HandleInertiaRequests`) is visible
 to everyone, including unauthenticated visitors on the login page — only *changing* it is gated.
+
+## Post-Launch: Hybrid Online/LAN/Offline Sync (Phase 1 — Foundation)
+
+One new permission, Admin-only with no partial grant, same shape as `backups.manage`/
+`branding.manage` — the Administrator's PC is the designated LAN sync hub, so device registration
+and Sync Center access are Admin-only by design, not just by default:
+
+| Ability | Admin | Dean | Dept. Head | Faculty |
+|---|---|---|---|---|
+| Manage sync devices, view Sync Center, resolve conflicts | ✅ | ⛔ | ⛔ | ⛔ |
+
+`sync.manage` exists only in the seeder's `PERMISSIONS` list. No dedicated Policy class — same
+reasoning as `BackupController`/`BrandingController`: `devices`, `sync_changes`,
+`sync_checkpoints`, `sync_conflicts`, and `sync_runs` have no per-record ownership to adjudicate
+(they're sync-engine bookkeeping, not user-owned content), so route-level
+`permission:sync.manage` middleware is the whole authorization story once Phase 4 adds routes.
+
+**Phase 1 is inert by design** — it adds `uuid`/`sync_version`/`origin_device_id` columns (all
+nullable/defaulted, zero risk to existing behavior) to the pilot table set (`students`,
+`student_enrollments`, `enrollment_courses`, `student_grades`), plus a `SyncChangeObserver`
+(registered in `AppServiceProvider::boot()`) that assigns a `uuid` on create, bumps `sync_version`
+on any real business-field change, and writes one row per write to the new `sync_changes` outbox
+table. No API routes, no UI, and no actual data transfer exist yet — this phase only proves the
+metadata plumbing is correct, with `tests/Feature/SyncFoundationTest.php` as the record of that
+proof. See `plans/quirky-popping-parnas.md` (not committed — local Claude Code plan file) for the
+full phase sequence this is Phase 1 of.
+
+**One correction to record**: an earlier audit pass reported `StudentGrade` as lacking
+`SoftDeletes`, which would have needed a bespoke tombstone column. Direct inspection of the model
+before writing its migration found this wrong — `StudentGrade` already has `SoftDeletes`, so it
+uses the exact same `uuid`/`sync_version`/`origin_device_id` migration shape as the other three
+pilot tables, no special-casing needed. Worth remembering: verify a fact against the actual file
+before building on it, even when it comes from a purpose-built audit pass.

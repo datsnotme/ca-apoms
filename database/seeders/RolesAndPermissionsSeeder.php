@@ -75,6 +75,11 @@ class RolesAndPermissionsSeeder extends Seeder
         // adjudicate, so no dedicated Policy either — see
         // BrandingController).
         'branding.manage',
+        // Post-launch: hybrid online/LAN/offline sync (Phase 1 — Foundation).
+        // Admin-only, same shape as `backups.manage`/`branding.manage` — the
+        // Administrator's PC is the LAN sync hub, and device registration/
+        // Sync Center access has no per-record ownership to adjudicate.
+        'sync.manage',
     ];
 
     /**

@@ -1193,3 +1193,38 @@ student department-forcing fix), Pint clean, `tsc --noEmit` clean, `npm run buil
   it will run against real MySQL in production without changes.
 - Queue driver is `database` in development (no Redis dependency for local dev); the code
   is queue-connection-agnostic so production can switch to Redis/SQS via `.env` alone.
+
+## Post-Launch: Hybrid Online/LAN/Offline Sync
+
+A full architecture plan exists for making CA-APOMS usable Online, over the office LAN (the
+Administrator's PC as sync hub), and fully Offline, with a manual Update/Sync button reconciling
+changes across instances without ever silently overwriting data. The plan and its full reasoning
+live in `C:\Users\ACER\.claude\plans\quirky-popping-parnas.md` (a local Claude Code plan file, not
+committed to this repo) — summarized here for anyone who doesn't have that file:
+
+- **The framing that matters most**: Inertia.js cannot render a single page without a live
+  connection to a running Laravel server — there is no client-side router or data layer to fall
+  back on. So "fully offline" here does not mean an offline-capable frontend (no service worker,
+  no IndexedDB) — it means two independent, already-functioning Laravel installations (the
+  Administrator's local one, and a future cloud one) periodically exchanging incremental changes
+  over HTTPS. That reframing is why this is a database/API-level addition, not a frontend rewrite.
+- **Scope decisions already made**: only the Administrator's PC needs true standalone offline
+  capability (it already has that today, running locally — LAN/Dean/Head/Faculty machines are
+  just browsers, no local install of their own); no cloud deployment exists yet, so cloud-sync
+  work will be proven against a second local instance standing in for one; and the engine is being
+  built and fully proven against a small pilot table set (`Student`, `StudentEnrollment`,
+  `EnrollmentCourse`, `StudentGrade`) before expanding to the other ~65 sync-candidate tables.
+- **Phase 1 (Foundation) is complete**: additive `uuid`/`sync_version`/`origin_device_id` columns
+  on the 4 pilot tables (all existing `SoftDeletes` tombstones reused, no new deletion-tracking
+  columns needed — see `ROLE_PERMISSIONS.md`'s note on `StudentGrade` specifically), five new
+  metadata tables (`devices`, `sync_changes`, `sync_checkpoints`, `sync_conflicts`, `sync_runs`),
+  Sanctum published and wired to `User` (was a dormant composer dependency before this — no
+  config, no migration, no trait), and `SyncChangeObserver` populating the `sync_changes` outbox
+  on every real write to a pilot model. No API routes, no UI, no live data transfer yet — see
+  `ROLE_PERMISSIONS.md` for the `sync.manage` permission this introduced.
+- **`uuid` is nullable at the schema level**, not `NOT NULL` — `doctrine/dbal` isn't installed, so
+  there's no `Schema::table(...)->change()` available to enforce it after backfilling existing
+  rows. `SyncChangeObserver`'s `creating()` hook guarantees every new row gets one; the migrations
+  backfill every pre-existing row in the same pass via `chunkById()`. This is an accepted tradeoff,
+  not an oversight — adding `doctrine/dbal` as a new dependency for one column constraint wasn't
+  judged worth it.

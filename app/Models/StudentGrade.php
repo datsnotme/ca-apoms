@@ -33,7 +33,7 @@ class StudentGrade extends Model
 
     protected function casts(): array
     {
-        return ['status' => StudentGradeStatus::class];
+        return ['status' => StudentGradeStatus::class, 'sync_version' => 'integer'];
     }
 
     protected static function booted(): void

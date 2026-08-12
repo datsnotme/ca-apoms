@@ -38,6 +38,7 @@ class Student extends Model
             'birth_date' => 'date',
             'date_admitted' => 'date',
             'expected_graduation_date' => 'date',
+            'sync_version' => 'integer',
         ];
     }
 

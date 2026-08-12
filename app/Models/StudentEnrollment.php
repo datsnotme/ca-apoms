@@ -21,7 +21,7 @@ class StudentEnrollment extends Model
 
     protected function casts(): array
     {
-        return ['status' => EnrollmentStatus::class];
+        return ['status' => EnrollmentStatus::class, 'sync_version' => 'integer'];
     }
 
     public function student(): BelongsTo
