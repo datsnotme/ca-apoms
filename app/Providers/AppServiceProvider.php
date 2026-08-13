@@ -2,10 +2,20 @@
 
 namespace App\Providers;
 
+use App\Models\AcademicYear;
+use App\Models\ClassSection;
+use App\Models\College;
+use App\Models\Course;
+use App\Models\Curriculum;
+use App\Models\Department;
 use App\Models\EnrollmentCourse;
+use App\Models\Program;
+use App\Models\Section;
+use App\Models\Semester;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentGrade;
+use App\Models\YearLevel;
 use App\Observers\SyncChangeObserver;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -43,5 +53,21 @@ class AppServiceProvider extends ServiceProvider
         StudentEnrollment::observe(SyncChangeObserver::class);
         EnrollmentCourse::observe(SyncChangeObserver::class);
         StudentGrade::observe(SyncChangeObserver::class);
+
+        // Phase 6 — reference tables the pilot set depends on, so a Student
+        // (etc.) synced to another instance resolves correctly instead of
+        // assuming both sides happen to share matching reference-table IDs.
+        // See SyncService::FK_REFERENCES for the FK-to-uuid translation this
+        // enables.
+        College::observe(SyncChangeObserver::class);
+        AcademicYear::observe(SyncChangeObserver::class);
+        YearLevel::observe(SyncChangeObserver::class);
+        Department::observe(SyncChangeObserver::class);
+        Program::observe(SyncChangeObserver::class);
+        Curriculum::observe(SyncChangeObserver::class);
+        Semester::observe(SyncChangeObserver::class);
+        Course::observe(SyncChangeObserver::class);
+        ClassSection::observe(SyncChangeObserver::class);
+        Section::observe(SyncChangeObserver::class);
     }
 }

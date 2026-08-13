@@ -1402,3 +1402,67 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     duplication (`SELECT COUNT(*)` for the synced row stayed at 1 throughout), and the Devices
     table's "Last Synced" column updated accurately; clicked "Sync Now" a third time with nothing
     pending and confirmed a clean, error-free no-op.
+- **Phase 6 (expansion — reference-table sync + FK translation, complete)**: closed the reference-
+  table gap documented since Phase 2 — the User explicitly scoped this phase to "expand the table
+  set" over the other three candidate slices (Device Management UI, file/document sync, LAN
+  deployment docs), which remain undesigned.
+  - **10 tables joined the synced set**: `colleges`, `academic_years`, `year_levels`, `departments`,
+    `programs`, `courses`, `curricula`, `semesters`, `sections`, `class_sections` — every reference
+    table the 4 pilot tables transitively depend on (traced via a full FK audit of the pilot chain,
+    not guessed). Same additive migration pattern as Phase 1 (`uuid`/`sync_version`/
+    `origin_device_id` + backfill). `year_levels` also gained `SoftDeletes` (a `deleted_at` column) —
+    it was the one synced-eligible model without it, and the sync engine's tombstone mechanism
+    universally assumes `withTrashed()`/`trashed()` exist; a behavior no-op today since nothing
+    currently deletes a `YearLevel`.
+  - **The actual gap-closing work — FK-to-uuid translation**: adding tables to the synced set alone
+    doesn't fix cross-instance correctness, since two independently-seeded instances still
+    auto-increment their own, different IDs for the same conceptual row. `SyncService::FK_REFERENCES`
+    declares every FK column (on both the 10 new tables *and* the original pilot tables — e.g.
+    `student_enrollments.student_id`, `enrollment_courses.student_enrollment_id`,
+    `student_grades.enrollment_course_id`, previously unresolved too) that points at another synced
+    table. `snapshotFor()` now sends those columns' *referenced row's uuid* alongside the raw value
+    (under a `_fk_uuids` key inside the snapshot); `resolveForeignKeys()` translates that back into
+    whatever local ID the receiving instance actually gave that row, on every apply path (create,
+    fast-forward, field-level merge, and conflict-resolution's `take_remote`). FKs into `users`
+    (`encoded_by`, `adviser_id`, ...) are deliberately excluded — User accounts still aren't synced,
+    out of scope here same as before.
+  - **Dependency-order sorting**: `pendingChangesSince()` sorts its output by a fixed topological
+    order (`SYNC_ORDER` — reference tables before their dependents) so that within one batch, a
+    dependent entity's FK always resolves against a reference-table row appearing earlier in the
+    *same* batch, regardless of which raw `sync_changes` id each happened to get.
+  - **Deliberate failure mode**: if a referenced row genuinely can't be found locally (a dependency
+    landed in a *later* page than its dependent — only possible at the 200-per-batch boundary, since
+    `SYNC_ORDER` handles same-batch ordering), `resolveForeignKeys()` throws rather than silently
+    skipping. Because this always runs inside a `DB::transaction()` (Phase 5), throwing rolls back
+    the whole batch and leaves the checkpoint un-advanced, so the next sync attempt retries the exact
+    same batch — consistent with Phase 5's "a clean failure + retry beats a silent skip" philosophy.
+  - **Known, deliberate limitation — still not "seed two instances from scratch and expect them to
+    agree"**: FK translation only works once the referenced row has already synced at least once.
+    A row that predates a table joining the synced set (e.g. this app's own `College`, seeded by
+    `CollegeDepartmentSeeder` long before Phase 6) has a backfilled `uuid` but *no outbox history* —
+    Phase 1 never backfilled synthetic "created" entries for pre-existing rows either, so this isn't
+    a new gap, just a newly-relevant one now that reference tables carry real pre-existing data. One
+    edit brings a pre-existing row into the outbox for the first time (proven in the live proof
+    below). A genuinely brand-new second instance — two independent `db:seed` runs sharing zero
+    history — still needs to be bootstrapped via backup/restore (the existing `BackupService`) before
+    incremental sync can do anything; sync heals *ongoing* divergence, it was never meant to invent a
+    shared history that never existed. `College` also deserves a specific callout: it's a
+    "single-college install" singleton by convention (see `BrandingController`'s docblock) — two
+    independently-seeded instances would each mint their *own* `College` row with different uuids,
+    and syncing would produce two rows, not a merge. Not solved here; the same backup/restore
+    bootstrap avoids it in practice.
+  - Verified: 7 new tests (`SyncReferenceTableTest` — FK translation for a single-column case
+    (Department→College), a Student's four FKs translated at once, cross-pilot-table translation
+    (StudentEnrollment→Student), the not-yet-synced-dependency throw, dependency-order sorting
+    surviving an out-of-order raw id, and backward compatibility with pre-Phase-6 payloads that carry
+    no `_fk_uuids` at all), full regression green (446/446 — including a pre-existing, unrelated
+    flaky factory fixed along the way: `ClassSectionFactory`'s single-letter `section_label` had only
+    26 possible values and collided under this suite's growing volume of factory calls; widened to
+    three characters), and a live two-instance proof deliberately *not* using matching IDs this time:
+    seeded Instance B with filler departments/programs first so its auto-increment counters were
+    guaranteed to diverge from Instance A's, synced Instance A's pre-existing `College` over (after
+    the one-time "touch to enter the outbox" step above), then created a brand-new Department →
+    Program → Curriculum → YearLevel → Student chain on Instance A using ordinary auto-increment (no
+    explicit ids at all) and pushed it — every single FK on Instance B's resulting rows correctly
+    pointed at Instance B's own, independently-assigned local ids (verified column-by-column), never
+    the raw ids that traveled on the wire.

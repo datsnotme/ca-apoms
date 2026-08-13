@@ -2,8 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\AcademicYear;
+use App\Models\ClassSection;
+use App\Models\College;
+use App\Models\Course;
+use App\Models\Curriculum;
+use App\Models\Department;
 use App\Models\Device;
 use App\Models\EnrollmentCourse;
+use App\Models\Program;
+use App\Models\Section;
+use App\Models\Semester;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\StudentGrade;
@@ -12,10 +21,12 @@ use App\Models\SyncCheckpoint;
 use App\Models\SyncConflict;
 use App\Models\SyncRemote;
 use App\Models\SyncRun;
+use App\Models\YearLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 /**
  * Renamed from SyncPullService (Phase 2) — this now serves both directions
@@ -25,12 +36,17 @@ use Illuminate\Support\Facades\Http;
  * merged in, so pull and push can never disagree about what counts as a
  * conflict.
  *
- * Known limitation, deliberately not solved here: pilot models carry
- * foreign keys (department_id, program_id, curriculum_id, ...) into
- * reference tables that are NOT themselves synced yet. Applying an
- * incoming Student only produces correct data if both instances share the
- * same reference-table IDs. Real production use needs those reference
- * tables synced too — that's Phase 6 (Expansion), not this phase.
+ * Phase 6 closed the reference-table gap noted in Phase 2/3: FK_REFERENCES
+ * declares which columns on which synced tables point at another synced
+ * table, and snapshotFor()/attributesFor()/resolveForeignKeys() translate
+ * those columns to/from the referenced row's uuid on the wire — a raw
+ * `department_id` is meaningless once two instances have independently
+ * auto-incremented their own IDs, but the uuid is portable. This still
+ * assumes the referenced row has already synced (see SYNC_ORDER); a
+ * genuinely brand-new second instance with zero shared history still needs
+ * to be bootstrapped via backup/restore, not two independent `db:seed`
+ * runs — sync heals *ongoing* divergence, it doesn't invent a shared
+ * history that was never there. See ASSUMPTIONS.md.
  *
  * Three-way merge, in brief: every outbox row now carries base_version (the
  * entity's sync_version immediately before that write) and changed_fields
@@ -53,10 +69,69 @@ class SyncService
 {
     /** @var array<string, class-string<Model>> */
     private const SYNCED_MODELS = [
+        'colleges' => College::class,
+        'academic_years' => AcademicYear::class,
+        'year_levels' => YearLevel::class,
+        'departments' => Department::class,
+        'programs' => Program::class,
+        'courses' => Course::class,
+        'curricula' => Curriculum::class,
+        'semesters' => Semester::class,
+        'sections' => Section::class,
+        'class_sections' => ClassSection::class,
         'students' => Student::class,
         'student_enrollments' => StudentEnrollment::class,
         'enrollment_courses' => EnrollmentCourse::class,
         'student_grades' => StudentGrade::class,
+    ];
+
+    /**
+     * Topological order (dependencies before dependents) that
+     * pendingChangesSince() sorts its output by, so that within one batch a
+     * dependent entity's FK_REFERENCES always resolve against a
+     * reference-table row that appears earlier in the same batch. Doesn't
+     * need to be the *only* valid order, just *a* valid one.
+     *
+     * @var array<int, string>
+     */
+    private const SYNC_ORDER = [
+        'colleges', 'academic_years', 'year_levels',
+        'departments',
+        'programs', 'courses',
+        'curricula', 'semesters',
+        'sections', 'class_sections',
+        'students',
+        'student_enrollments',
+        'enrollment_courses',
+        'student_grades',
+    ];
+
+    /**
+     * Declares which FK columns on which synced tables point at another
+     * synced table's `id` — the ones whose raw value is meaningless across
+     * instances and must travel as the referenced row's uuid instead. FKs
+     * into `users` (encoded_by, adviser_id, ...) are deliberately absent:
+     * User accounts aren't synced (out of scope — see ASSUMPTIONS.md), so
+     * those columns stay as opaque local IDs, same as before Phase 6.
+     *
+     * @var array<string, array<string, string>>
+     */
+    private const FK_REFERENCES = [
+        'departments' => ['college_id' => 'colleges'],
+        'programs' => ['department_id' => 'departments'],
+        'courses' => ['department_id' => 'departments'],
+        'curricula' => ['program_id' => 'programs', 'effective_academic_year_id' => 'academic_years'],
+        'semesters' => ['academic_year_id' => 'academic_years'],
+        'sections' => ['program_id' => 'programs', 'year_level_id' => 'year_levels', 'academic_year_id' => 'academic_years'],
+        'class_sections' => ['course_id' => 'courses', 'semester_id' => 'semesters'],
+        'students' => [
+            'department_id' => 'departments', 'program_id' => 'programs',
+            'curriculum_id' => 'curricula', 'year_level_id' => 'year_levels',
+            'section_id' => 'sections',
+        ],
+        'student_enrollments' => ['student_id' => 'students', 'semester_id' => 'semesters'],
+        'enrollment_courses' => ['student_enrollment_id' => 'student_enrollments', 'class_section_id' => 'class_sections'],
+        'student_grades' => ['enrollment_course_id' => 'enrollment_courses'],
     ];
 
     /**
@@ -85,6 +160,7 @@ class SyncService
 
         $changes = $rows->groupBy(fn (SyncChange $c) => $c->entity_table.'|'.$c->entity_uuid)
             ->map(fn (Collection $group) => $this->buildChangeEntry($group->sortBy('id')->values()))
+            ->sortBy(fn (array $change) => array_search($change['entity_table'], self::SYNC_ORDER))
             ->values()
             ->all();
 
@@ -244,8 +320,13 @@ class SyncService
 
             // Safe merge: apply only the fields the remote actually
             // touched, leaving local's own edits to its own fields intact.
+            // Any of those touched fields that are themselves FK columns
+            // (e.g. a moved department_id) still need translating — the
+            // raw value in $change['snapshot'] is the sender's, not ours.
+            $resolvedFks = collect($this->resolveForeignKeys($entityTable, $change['snapshot'] ?? []))->only($remoteChangedFields);
             $mergedAttributes = collect($change['snapshot'] ?? [])
                 ->only($remoteChangedFields)
+                ->merge($resolvedFks)
                 ->put('sync_version', max((int) $local->sync_version, (int) $change['version']))
                 ->put('origin_device_id', $sourceDeviceId)
                 ->toArray();
@@ -332,8 +413,12 @@ class SyncService
      */
     private function attributesFor(array $change, ?int $sourceDeviceId): array
     {
-        return collect($change['snapshot'] ?? [])
-            ->except(['id', 'created_at', 'updated_at'])
+        $snapshot = $change['snapshot'] ?? [];
+        $resolvedFks = $this->resolveForeignKeys($change['entity_table'], $snapshot);
+
+        return collect($snapshot)
+            ->except(['id', 'created_at', 'updated_at', '_fk_uuids'])
+            ->merge($resolvedFks)
             ->put('origin_device_id', $sourceDeviceId)
             ->toArray();
     }
@@ -520,8 +605,10 @@ class SyncService
             $local = $modelClass ? $modelClass::withTrashed()->where('uuid', $conflict->entity_uuid)->first() : null;
 
             if ($local && $conflict->remote_snapshot) {
+                $resolvedFks = $this->resolveForeignKeys($conflict->entity_table, $conflict->remote_snapshot);
                 $attributes = collect($conflict->remote_snapshot)
-                    ->except(['id', 'uuid', 'sync_version', 'created_at', 'updated_at'])
+                    ->except(['id', 'uuid', 'sync_version', 'created_at', 'updated_at', '_fk_uuids'])
+                    ->merge($resolvedFks)
                     ->toArray();
                 $local->forceFill($attributes)->save();
             }
@@ -540,6 +627,74 @@ class SyncService
      */
     private function snapshotFor(Model $model): array
     {
-        return $model->only(array_merge($model->getFillable(), ['uuid', 'sync_version']));
+        $snapshot = $model->only(array_merge($model->getFillable(), ['uuid', 'sync_version']));
+
+        $fkUuids = [];
+        foreach (self::FK_REFERENCES[$model->getTable()] ?? [] as $column => $referencedTable) {
+            $value = $model->{$column};
+            if ($value === null) {
+                continue;
+            }
+
+            $referencedModel = self::SYNCED_MODELS[$referencedTable];
+            $uuid = $referencedModel::withTrashed()->find($value)?->uuid;
+            if ($uuid !== null) {
+                $fkUuids[$column] = $uuid;
+            }
+        }
+
+        if (! empty($fkUuids)) {
+            $snapshot['_fk_uuids'] = $fkUuids;
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * Translates a snapshot's `_fk_uuids` (see snapshotFor()) into local
+     * IDs for this instance, keyed by the FK column they belong on. Throws
+     * rather than silently skipping when a referenced row can't be found
+     * locally — deliberately: this runs inside applyIncoming(), itself
+     * always called inside a DB::transaction() (pullFrom()'s own wrap, or
+     * SyncController::push()'s, per Phase 5), so throwing rolls back the
+     * whole batch and leaves the checkpoint un-advanced. The next sync
+     * attempt naturally retries the same batch, by which point — assuming
+     * SYNC_ORDER did its job and this was a batch-boundary edge case, not a
+     * genuinely missing reference row — the dependency has usually synced.
+     * A silent skip would be worse: the checkpoint would still advance past
+     * a change that never actually applied correctly.
+     *
+     * @param  array<string, mixed>  $snapshot
+     * @return array<string, int>
+     */
+    private function resolveForeignKeys(string $entityTable, array $snapshot): array
+    {
+        $fkColumns = self::FK_REFERENCES[$entityTable] ?? [];
+        if (empty($fkColumns)) {
+            return [];
+        }
+
+        $fkUuids = $snapshot['_fk_uuids'] ?? [];
+        $resolved = [];
+
+        foreach ($fkColumns as $column => $referencedTable) {
+            if (! array_key_exists($column, $fkUuids)) {
+                continue; // null on the sender (nullable FK) — leave unset.
+            }
+
+            $referencedModel = self::SYNCED_MODELS[$referencedTable];
+            $localId = $referencedModel::withTrashed()->where('uuid', $fkUuids[$column])->value('id');
+
+            if ($localId === null) {
+                throw new RuntimeException(
+                    "Cannot resolve {$entityTable}.{$column}: no local {$referencedTable} row with uuid ".
+                    "{$fkUuids[$column]} — its own change may not have synced yet."
+                );
+            }
+
+            $resolved[$column] = $localId;
+        }
+
+        return $resolved;
     }
 }

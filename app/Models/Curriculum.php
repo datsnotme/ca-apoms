@@ -24,7 +24,7 @@ class Curriculum extends Model
 
     protected function casts(): array
     {
-        return ['status' => ActiveStatus::class];
+        return ['status' => ActiveStatus::class, 'sync_version' => 'integer'];
     }
 
     public function program(): BelongsTo

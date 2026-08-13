@@ -17,7 +17,7 @@ class AcademicYear extends Model
 
     protected function casts(): array
     {
-        return ['is_current' => 'boolean'];
+        return ['is_current' => 'boolean', 'sync_version' => 'integer'];
     }
 
     public function semesters(): HasMany

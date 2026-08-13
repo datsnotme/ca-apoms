@@ -13,6 +13,11 @@ class Section extends Model
 
     protected $fillable = ['program_id', 'year_level_id', 'academic_year_id', 'name', 'capacity'];
 
+    protected function casts(): array
+    {
+        return ['sync_version' => 'integer'];
+    }
+
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);

@@ -21,6 +21,11 @@ class College extends Model
         'code', 'name', 'address', 'contact_email', 'contact_phone', 'logo_path',
     ];
 
+    protected function casts(): array
+    {
+        return ['sync_version' => 'integer'];
+    }
+
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);

@@ -173,7 +173,12 @@ test('pushTo gathers local pending changes, posts them, and advances the push cu
     $run = $this->service->pushTo($device, 'https://remote.test', 'fake-token', 'lan-hub');
 
     expect($run->status)->toBe('success');
-    expect($run->uploaded_count)->toBe(1);
+    // Creating the Student's own reference-data fixtures (Department,
+    // Program, Curriculum, YearLevel, ...) now also produces outbox
+    // entries, since Phase 6 tracks those tables too — the batch includes
+    // more than just the student itself; the Http::assertSent() below
+    // confirms the student specifically is among them.
+    expect($run->uploaded_count)->toBeGreaterThan(0);
     expect($run->created_count)->toBe(1);
 
     Http::assertSent(function ($request) use ($student) {

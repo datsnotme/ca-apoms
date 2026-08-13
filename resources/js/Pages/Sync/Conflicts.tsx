@@ -22,7 +22,7 @@ interface Conflict {
     created_at: string;
 }
 
-const HIDDEN_FIELDS = new Set(['uuid', 'sync_version', 'id', 'created_at', 'updated_at']);
+const HIDDEN_FIELDS = new Set(['uuid', 'sync_version', 'id', 'created_at', 'updated_at', '_fk_uuids']);
 
 function formatValue(value: unknown): string {
     if (value === null || value === undefined || value === '') return '—';

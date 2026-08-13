@@ -25,6 +25,7 @@ class Program extends Model
     {
         return [
             'status' => ActiveStatus::class,
+            'sync_version' => 'integer',
         ];
     }
 

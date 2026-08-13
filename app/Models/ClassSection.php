@@ -22,7 +22,7 @@ class ClassSection extends Model
 
     protected function casts(): array
     {
-        return ['status' => ClassSectionStatus::class];
+        return ['status' => ClassSectionStatus::class, 'sync_version' => 'integer'];
     }
 
     public function course(): BelongsTo

@@ -34,6 +34,7 @@ class Course extends Model
             'units' => 'decimal:2',
             'lecture_hours' => 'decimal:2',
             'laboratory_hours' => 'decimal:2',
+            'sync_version' => 'integer',
         ];
     }
 

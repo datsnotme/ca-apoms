@@ -36,12 +36,14 @@ test('pull returns a newly created student with a full snapshot', function () {
     $response = $this->getJson('/api/sync/pull?since_id=0');
 
     $response->assertOk();
-    $changes = $response->json('changes');
-    expect($changes)->toHaveCount(1);
-    expect($changes[0]['entity_table'])->toBe('students');
-    expect($changes[0]['entity_uuid'])->toBe($student->uuid);
-    expect($changes[0]['operation'])->toBe('created');
-    expect($changes[0]['snapshot']['student_number'])->toBe($student->student_number);
+    // Creating the Student's own reference-data fixtures (Department,
+    // Program, Curriculum, YearLevel, ...) now also produces outbox
+    // entries, since Phase 6 tracks those tables too — find the student's
+    // own entry rather than assuming it's the only one in the batch.
+    $change = collect($response->json('changes'))->firstWhere('entity_uuid', $student->uuid);
+    expect($change['entity_table'])->toBe('students');
+    expect($change['operation'])->toBe('created');
+    expect($change['snapshot']['student_number'])->toBe($student->student_number);
     expect($response->json('next_since_id'))->toBeGreaterThan(0);
 });
 
