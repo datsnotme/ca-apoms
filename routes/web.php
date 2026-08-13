@@ -10,6 +10,7 @@ use App\Http\Controllers\Academic\SemesterController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BrandingController;
+use App\Http\Controllers\Admin\SyncCenterController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Advising\AdvisingController;
 use App\Http\Controllers\Advising\StudentAdvisingRecordController;
@@ -317,6 +318,18 @@ Route::middleware('auth')->group(function () {
         Route::get('branding', [BrandingController::class, 'edit'])->name('branding.edit');
         Route::post('branding', [BrandingController::class, 'update'])->name('branding.update');
         Route::delete('branding', [BrandingController::class, 'destroy'])->name('branding.destroy');
+    });
+
+    Route::middleware('permission:sync.manage')->prefix('sync')->name('sync.')->group(function () {
+        Route::get('/', [SyncCenterController::class, 'index'])->name('index');
+        Route::post('devices/{device}/set-local', [SyncCenterController::class, 'setLocalDevice'])->name('devices.set-local');
+        Route::post('remotes', [SyncCenterController::class, 'storeRemote'])->name('remotes.store');
+        Route::put('remotes/{remote}', [SyncCenterController::class, 'updateRemote'])->name('remotes.update');
+        Route::delete('remotes/{remote}', [SyncCenterController::class, 'destroyRemote'])->name('remotes.destroy');
+        Route::post('remotes/{remote}/sync', [SyncCenterController::class, 'syncNow'])->name('remotes.sync');
+        Route::get('history', [SyncCenterController::class, 'history'])->name('history');
+        Route::get('conflicts', [SyncCenterController::class, 'conflicts'])->name('conflicts');
+        Route::post('conflicts/{conflict}/resolve', [SyncCenterController::class, 'resolveConflict'])->name('conflicts.resolve');
     });
 });
 

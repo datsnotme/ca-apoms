@@ -3,6 +3,7 @@ import { PropsWithChildren, ReactNode, useState } from 'react';
 import Dropdown from '@/Components/Dropdown';
 import FlashToast from '@/Components/ui/FlashToast';
 import NotificationBell from '@/Components/NotificationBell';
+import SyncStatusPill from '@/Components/SyncStatusPill';
 import { NAVIGATION, NavItem } from '@/navigation';
 import { PageProps } from '@/types';
 
@@ -62,7 +63,7 @@ export default function AppLayout({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const { auth, notificationCenter, systemLogoUrl } = usePage<PageProps>().props;
+    const { auth, notificationCenter, systemLogoUrl, pendingSyncConflicts } = usePage<PageProps>().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     return (
@@ -114,6 +115,9 @@ export default function AppLayout({
                                 {auth.user.department ? ` · ${auth.user.department.name}` : ''}
                             </p>
                         </div>
+                        {pendingSyncConflicts !== null && pendingSyncConflicts !== undefined && (
+                            <SyncStatusPill pendingConflicts={pendingSyncConflicts} />
+                        )}
                         {notificationCenter && (
                             <NotificationBell unreadCount={notificationCenter.unread_count} recent={notificationCenter.recent} />
                         )}

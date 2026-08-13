@@ -41,6 +41,7 @@ export type PageProps<
         recent: AppNotification[];
     } | null;
     systemLogoUrl: string | null;
+    pendingSyncConflicts: number | null;
 };
 
 export interface PaginationLink {

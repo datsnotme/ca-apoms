@@ -1317,3 +1317,52 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     (`grade` on one side, `status` on the other — which would auto-merge for any other pilot model)
     still recorded a conflict, confirming the grades-always-conflict rule holds even without field
     overlap.
+- **Phase 4 (Sync Center UI, complete)**: a web-facing (session-auth, not Sanctum) admin dashboard at
+  `/sync`, gated by `permission:sync.manage` exactly like Backups/Branding — `SyncCenterController`
+  (`App\Http\Controllers\Admin`), no dedicated Policy. Three pages: `Sync/Index` (this instance's
+  device identity, configured remotes with a manual "Sync Now" button, the device registry, and the
+  last 5 runs), `Sync/History` (paginated `sync_runs`), `Sync/Conflicts` (paginated pending
+  `sync_conflicts` with a two-column local/remote field diff — new UI, no existing precedent in this
+  app to copy from — and Take Remote / Keep Local resolution buttons).
+  - **New storage this phase adds**, both following established conventions rather than introducing
+    a generic key-value settings table (none exists anywhere in this app): `devices.is_local`
+    (boolean, marks which registered `Device` row IS this running instance — the identity
+    `SyncService::pullFrom()`/`pushTo()` need; enforced "only one at a time" at the application
+    layer, the same way `BrandingController` enforces "one `College` row", not via a schema
+    constraint) and a new `sync_remotes` table (`name`, `base_url`, `token` — the Admin-configurable
+    remote address storage that Phase 2's `pullFrom()`/`pushTo()` docblocks always said Phase 4
+    would add, instead of those methods continuing to take raw arguments). `token` uses Eloquent's
+    `encrypted` cast — never stored or displayed in plaintext; the edit form leaves it blank to keep
+    the existing token unless a new one is typed.
+  - **`SyncService::reconcile()`**: the "Sync Now" button's orchestration — calls `pullFrom()` then
+    `pushTo()` against one `SyncRemote`, each independently try/caught so a one-way failure (e.g.
+    the remote is offline) doesn't block attempting the other direction. Both directions' `SyncRun`
+    rows are visible in History regardless of outcome.
+  - **`SyncService::applyResolution()`**: 'take_remote' applies the conflict's `remote_snapshot`
+    through a normal (non-`saveQuietly`) `save()` — deliberately not quiet, unlike
+    `applyIncoming()`'s merge/fast-forward paths, so the resolution itself becomes a fresh, correctly
+    `base_version`-ed local outbox entry that can propagate onward to other remotes on the next sync.
+    'keep_local' mutates nothing. Both mark the `SyncConflict` `resolved` with `resolution`,
+    `resolved_by`, `resolved_at`.
+  - **Known, deliberate gap**: resolving a conflict is a LOCAL decision — it does not guarantee the
+    same historical conflicting change can never be re-offered by a remote that re-sends an old,
+    already-acknowledged batch (e.g. after a checkpoint reset), since there's no
+    resolution-propagation message sent back to the remote saying "this was resolved, stop offering
+    it." Out of scope for this pilot's single-remote-pair topology — the same class of scoping
+    decision as the reference-table FK gap (Phase 2) and the double-apply idempotency gap (Phase 3).
+  - Header status pill (`pendingSyncConflicts`, shared via `HandleInertiaRequests`, gated inside the
+    closure on `sync.manage` so non-Admins always get `null` rather than the key being omitted)
+    shows a red "N sync conflicts" pill linking to `/sync/conflicts` when any are pending, or a green
+    "Sync OK" pill linking to `/sync` otherwise — visible to Admins on every page, not just the Sync
+    Center itself.
+  - Verified: 13 new tests (`SyncCenterTest` — permission gating on every route, remote CRUD
+    including the blank-token-on-update behavior, set-local-device, `syncNow` via HTTP-faked
+    pull+push, history/conflicts listing and status filtering, both resolution paths including
+    asserting the entity is/isn't mutated, invalid-resolution rejection, and the shared prop's
+    admin-only gating), full regression green (433/433), Pint and `tsc --noEmit` clean, and a manual
+    browser walkthrough against the real dev server and database: viewed the overview with a live
+    pending-conflict banner, resolved it via "Keep Local" and watched the banner disappear
+    immediately; triggered "Sync Now" against a deliberately unreachable remote and confirmed both
+    the pull and push attempts recorded `failed` `SyncRun` rows with the underlying cURL error
+    message surfaced in History, rather than crashing or silently doing nothing; opened the Add
+    Remote modal and confirmed all three fields render correctly.

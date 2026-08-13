@@ -89,4 +89,14 @@ export const NAVIGATION: NavItem[] = [
         permission: 'audit-logs.view',
     },
     { label: 'Backup and Restore', routeName: 'backups.index', permission: 'backups.manage' },
+    {
+        label: 'Sync Center',
+        routeName: 'sync.index',
+        permission: 'sync.manage',
+        children: [
+            { label: 'Overview', routeName: 'sync.index', permission: 'sync.manage' },
+            { label: 'History', routeName: 'sync.history', permission: 'sync.manage' },
+            { label: 'Conflicts', routeName: 'sync.conflicts', permission: 'sync.manage' },
+        ],
+    },
 ];

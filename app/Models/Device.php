@@ -10,7 +10,7 @@ class Device extends Model
 {
     protected $fillable = [
         'device_code', 'name', 'owner_user_id', 'role_hint',
-        'last_seen_at', 'last_sync_at', 'app_version', 'db_schema_version', 'status',
+        'last_seen_at', 'last_sync_at', 'app_version', 'db_schema_version', 'status', 'is_local',
     ];
 
     protected function casts(): array
@@ -18,6 +18,7 @@ class Device extends Model
         return [
             'last_seen_at' => 'datetime',
             'last_sync_at' => 'datetime',
+            'is_local' => 'boolean',
         ];
     }
 

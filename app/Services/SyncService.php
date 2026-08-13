@@ -10,6 +10,7 @@ use App\Models\StudentGrade;
 use App\Models\SyncChange;
 use App\Models\SyncCheckpoint;
 use App\Models\SyncConflict;
+use App\Models\SyncRemote;
 use App\Models\SyncRun;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -461,6 +462,77 @@ class SyncService
         $device->update(['last_sync_at' => now()]);
 
         return $run->fresh();
+    }
+
+    /**
+     * Phase 4's "Sync Now" button: a full reconciliation against one
+     * configured SyncRemote — pull first, then push, so an interrupted or
+     * one-way-failing attempt still makes whatever progress it can rather
+     * than an all-or-nothing transaction. Each direction is caught
+     * independently: a pull failure (e.g. the remote is offline) shouldn't
+     * prevent trying the push, and vice versa.
+     *
+     * @return array{pull: SyncRun|null, pullError: string|null, push: SyncRun|null, pushError: string|null}
+     */
+    public function reconcile(Device $localDevice, SyncRemote $remote): array
+    {
+        $result = ['pull' => null, 'pullError' => null, 'push' => null, 'pushError' => null];
+
+        try {
+            $result['pull'] = $this->pullFrom($localDevice, $remote->base_url, $remote->token, $remote->name);
+        } catch (\Throwable $e) {
+            $result['pullError'] = $e->getMessage();
+        }
+
+        try {
+            $result['push'] = $this->pushTo($localDevice, $remote->base_url, $remote->token, $remote->name);
+        } catch (\Throwable $e) {
+            $result['pushError'] = $e->getMessage();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Phase 4's conflict-resolution screen: an Admin picks a winner for a
+     * pending SyncConflict. 'take_remote' applies the remote's snapshot
+     * through a normal (non-quiet) save — deliberately NOT saveQuietly(),
+     * unlike applyIncoming()'s merge/fast-forward paths, so this resolution
+     * itself becomes a fresh, correctly-based local SyncChange outbox
+     * entry (base_version = the version right before adopting the remote's
+     * values) that can propagate onward to other remotes. 'keep_local'
+     * mutates nothing — local's current row already holds the value the
+     * Admin chose.
+     *
+     * Known, deliberate gap: this resolves the conflict LOCALLY and marks
+     * it resolved for tracking/audit purposes, but does not guarantee the
+     * same historical conflicting change can never be re-offered by a
+     * remote that re-sends an old, already-acknowledged batch (e.g. after
+     * a checkpoint reset). Full resolution-propagation across N remotes is
+     * out of scope for this pilot's single-remote-pair topology — the same
+     * class of scoping decision as the reference-table FK gap (Phase 2)
+     * and the double-apply idempotency gap (Phase 3); see ASSUMPTIONS.md.
+     */
+    public function applyResolution(SyncConflict $conflict, string $resolution, ?int $resolvedById): void
+    {
+        if ($resolution === 'take_remote') {
+            $modelClass = self::SYNCED_MODELS[$conflict->entity_table] ?? null;
+            $local = $modelClass ? $modelClass::withTrashed()->where('uuid', $conflict->entity_uuid)->first() : null;
+
+            if ($local && $conflict->remote_snapshot) {
+                $attributes = collect($conflict->remote_snapshot)
+                    ->except(['id', 'uuid', 'sync_version', 'created_at', 'updated_at'])
+                    ->toArray();
+                $local->forceFill($attributes)->save();
+            }
+        }
+
+        $conflict->update([
+            'status' => 'resolved',
+            'resolution' => $resolution,
+            'resolved_by' => $resolvedById,
+            'resolved_at' => now(),
+        ]);
     }
 
     /**

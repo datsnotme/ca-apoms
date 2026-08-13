@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\College;
+use App\Models\SyncConflict;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -68,6 +69,14 @@ class HandleInertiaRequests extends Middleware
             // needs it too. A single cheap lookup, not cached, matching
             // this project's "compute on demand" convention elsewhere.
             'systemLogoUrl' => fn () => College::query()->first()?->logo_url,
+            // Header status pill (Phase 4 Sync Center). Gated inside the
+            // closure, not by omitting the key, so every page still gets a
+            // stable (if null) prop shape — checked for sync.manage rather
+            // than any authenticated user, since only Admins can see the
+            // Sync Center this pill links to.
+            'pendingSyncConflicts' => fn () => $user?->can('sync.manage')
+                ? SyncConflict::where('status', 'pending')->count()
+                : null,
         ];
     }
 }
