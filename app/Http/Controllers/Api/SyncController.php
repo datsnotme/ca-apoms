@@ -7,6 +7,7 @@ use App\Models\Device;
 use App\Services\SyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The sync API (routes/api.php). Sanctum-token auth + sync.manage — see
@@ -49,6 +50,14 @@ class SyncController extends Controller
      * run them through the exact same applyIncoming() that pull() uses on
      * the other side — a merge or a conflict is decided identically no
      * matter which direction the data traveled.
+     *
+     * Wrapped in a transaction — same reasoning as pullFrom()'s own
+     * DB::transaction() wrap around this same call — so a batch that fails
+     * partway (a malformed change, a DB constraint violation) rolls back
+     * atomically instead of leaving some entities updated and others not.
+     * Phase 3 already made re-applying a batch safe (version-guarded), but
+     * that only helps once a batch either fully lands or fully doesn't;
+     * an interrupted transaction guarantees which of those two happened.
      */
     public function push(Request $request, SyncService $sync): JsonResponse
     {
@@ -58,7 +67,9 @@ class SyncController extends Controller
 
         $device = Device::where('device_code', $request->user()->currentAccessToken()?->name)->first();
 
-        $counts = $sync->applyIncoming($validated['changes'], $device?->id);
+        $counts = DB::transaction(fn () => $sync->applyIncoming($validated['changes'], $device?->id));
+
+        $device?->update(['last_sync_at' => now()]);
 
         return response()->json([
             ...$counts,

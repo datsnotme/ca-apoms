@@ -1366,3 +1366,39 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     the pull and push attempts recorded `failed` `SyncRun` rows with the underlying cURL error
     message surfaced in History, rather than crashing or silently doing nothing; opened the Add
     Remote modal and confirmed all three fields render correctly.
+- **Phase 5 (resilience, complete)**: no new sync logic — this phase audited the existing Phase 2-4
+  machinery for what happens when a sync is genuinely interrupted, found one real gap, fixed it, and
+  added regression coverage plus a live proof for the properties the design already claimed but
+  never had a dedicated test for.
+  - **Real bug found and fixed**: `SyncController::push()` called `SyncService::applyIncoming()`
+    directly, unlike `pullFrom()`, which wraps the equivalent call in `DB::transaction()`. A push
+    batch that failed partway through (a malformed change, a DB constraint violation on, say, a
+    fifth entity in a twenty-entity batch) would leave the first four committed and the rest not —
+    a silent, undetectable partial application, exactly the kind of thing principle #51 (never
+    silently lose or corrupt data) is about. Fixed by wrapping it in `DB::transaction()` too, so a
+    push batch now either lands completely or not at all, symmetric with pull. While in this method,
+    also added `$device?->update(['last_sync_at' => now()])` for the pushing device — previously
+    only pull/push *initiated* by this instance updated a device's `last_sync_at`; an incoming push
+    from a remote never updated that remote's own device row, so the Sync Center's Devices table
+    under-reported how recently a device had actually synced.
+  - **Idempotent-retry property, now explicitly tested rather than assumed**: if a push/pull
+    succeeds on the receiving side but the caller never sees the response (connection reset after
+    the remote committed, a proxy timeout, the LAN cable coming loose mid-response), the caller's
+    checkpoint never advances, so its next attempt resends the exact same batch. Because
+    `applyIncoming()`'s version-guard already made re-application safe (Phase 2's design), this
+    "lost response" scenario was already handled correctly — but had no test proving it end-to-end
+    through the real `/api/sync/push` endpoint until now.
+  - Verified: 6 new tests (`SyncResilienceTest` — a partially-failing batch rolls back atomically on
+    both the pull-consuming and push-receiving paths, a failed `pullFrom()`/`pushTo()` leaves its
+    checkpoint completely untouched so the retry re-fetches/re-sends the identical batch, resending
+    an already-applied batch through both the service method directly and the real API endpoint is a
+    safe no-op, and a pushing device's `last_sync_at` is now recorded), full regression green
+    (439/439), and a live two-instance proof across two genuinely separate running instances,
+    exercised through the actual Sync Center UI (not raw service calls): killed the remote instance's
+    server entirely, clicked "Sync Now" on the live `/sync` page, and confirmed both the pull and
+    push attempts failed cleanly with `failed` `SyncRun` rows and zero local data corruption; made a
+    real edit on the surviving instance while the remote stayed down; restarted the remote; clicked
+    "Sync Now" again and confirmed it succeeded, correctly delivered exactly the pending edit with no
+    duplication (`SELECT COUNT(*)` for the synced row stayed at 1 throughout), and the Devices
+    table's "Last Synced" column updated accurately; clicked "Sync Now" a third time with nothing
+    pending and confirmed a clean, error-free no-op.
