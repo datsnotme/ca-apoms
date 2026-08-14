@@ -8,6 +8,7 @@ use App\Enums\GraduationCandidateStatus;
 use App\Enums\InternalRequestStatus;
 use App\Enums\ResearchProjectStatus;
 use App\Enums\RoleName;
+use App\Enums\StudentClassification;
 use App\Enums\StudentStatus;
 use App\Models\Department;
 use App\Models\Equipment;
@@ -77,6 +78,7 @@ class DashboardController extends Controller
             ],
             'charts' => [
                 'studentsByStatus' => $this->statusBreakdown(Student::query(), StudentStatus::class, 'status'),
+                'studentsByClassification' => $this->classificationBreakdown(Student::query()),
                 'graduationPipeline' => $this->statusBreakdown(GraduationCandidate::query(), GraduationCandidateStatus::class, 'status'),
                 'atRiskByDepartment' => $this->atRiskByDepartment(),
                 'equipmentByStatus' => $this->statusBreakdown(Equipment::query(), EquipmentStatus::class, 'status'),
@@ -99,6 +101,7 @@ class DashboardController extends Controller
             ],
             'charts' => [
                 'studentsByStatus' => $this->statusBreakdown(Student::query(), StudentStatus::class, 'status'),
+                'studentsByClassification' => $this->classificationBreakdown(Student::query()),
                 'graduationPipeline' => $this->statusBreakdown(GraduationCandidate::query(), GraduationCandidateStatus::class, 'status'),
                 'atRiskByDepartment' => $this->atRiskByDepartment(),
             ],
@@ -124,6 +127,7 @@ class DashboardController extends Controller
             ],
             'charts' => [
                 'studentsByStatus' => $this->statusBreakdown(Student::where('department_id', $departmentId), StudentStatus::class, 'status'),
+                'studentsByClassification' => $this->classificationBreakdown(Student::where('department_id', $departmentId)),
                 'graduationPipeline' => $this->statusBreakdown(GraduationCandidate::visibleTo($user), GraduationCandidateStatus::class, 'status'),
             ],
         ]);
@@ -173,6 +177,38 @@ class DashboardController extends Controller
         }
 
         return ['labels' => $labels, 'values' => $values];
+    }
+
+    /**
+     * Regular and Irregular each get their own slice; every other
+     * classification (Transferee, Shiftee, Returning, Graduating) buckets
+     * into "Others" — a 3-slice summary for the dashboard pie chart,
+     * unlike statusBreakdown()'s one-slice-per-enum-case approach.
+     *
+     * @return array{labels: array<int, string>, values: array<int, int>}
+     */
+    private function classificationBreakdown(Builder $query): array
+    {
+        $counts = (clone $query)
+            ->selectRaw('classification, count(*) as aggregate')
+            ->groupBy('classification')
+            ->pluck('aggregate', 'classification');
+
+        $others = 0;
+        foreach (StudentClassification::cases() as $case) {
+            if (! in_array($case, [StudentClassification::Regular, StudentClassification::Irregular], true)) {
+                $others += (int) ($counts[$case->value] ?? 0);
+            }
+        }
+
+        return [
+            'labels' => ['Regular', 'Irregular', 'Others'],
+            'values' => [
+                (int) ($counts[StudentClassification::Regular->value] ?? 0),
+                (int) ($counts[StudentClassification::Irregular->value] ?? 0),
+                $others,
+            ],
+        ];
     }
 
     /**

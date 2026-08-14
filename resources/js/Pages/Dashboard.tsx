@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import {
+    ArcElement,
     BarElement,
     CategoryScale,
     Chart as ChartJS,
@@ -7,11 +8,11 @@ import {
     LinearScale,
     Tooltip,
 } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Bar, Pie } from 'react-chartjs-2';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardContent, CardHeader } from '@/Components/ui/Card';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
 
 interface StatCard {
     label: string;
@@ -33,10 +34,17 @@ interface DashboardProps {
 
 const CHART_TITLES: Record<string, string> = {
     studentsByStatus: 'Students by Status',
+    studentsByClassification: 'Student Classification',
     graduationPipeline: 'Graduation Pipeline',
     atRiskByDepartment: 'At-Risk Students by Department',
     equipmentByStatus: 'Equipment by Status',
 };
+
+const CHART_TYPES: Record<string, 'bar' | 'pie'> = {
+    studentsByClassification: 'pie',
+};
+
+const PIE_COLORS = ['#39944a', '#e8a92b', '#94a3b8']; // brand green / gold / slate — Regular, Irregular, Others
 
 const ROLE_TITLES: Record<DashboardProps['role'], string> = {
     administrator: 'College-Wide Dashboard',
@@ -59,10 +67,13 @@ function StatTile({ stat }: { stat: StatCard }) {
 }
 
 function DistributionChart({ chartKey, data }: { chartKey: string; data: ChartData }) {
+    const title = CHART_TITLES[chartKey] ?? chartKey;
+    const type = CHART_TYPES[chartKey] ?? 'bar';
+
     if (data.values.every((v) => v === 0)) {
         return (
             <Card>
-                <CardHeader title={CHART_TITLES[chartKey] ?? chartKey} />
+                <CardHeader title={title} />
                 <CardContent>
                     <p className="text-sm text-slate-500">No data yet.</p>
                 </CardContent>
@@ -74,28 +85,50 @@ function DistributionChart({ chartKey, data }: { chartKey: string; data: ChartDa
 
     return (
         <Card>
-            <CardHeader title={CHART_TITLES[chartKey] ?? chartKey} />
+            <CardHeader title={title} />
             <CardContent>
-                <div role="img" aria-label={`${CHART_TITLES[chartKey] ?? chartKey}. ${summary}`}>
-                    <Bar
-                        aria-hidden="true"
-                        data={{
-                            labels: data.labels,
-                            datasets: [
-                                {
-                                    data: data.values,
-                                    backgroundColor: '#4d7c0f',
-                                    borderRadius: 4,
-                                },
-                            ],
-                        }}
-                        options={{
-                            responsive: true,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-                        }}
-                        height={220}
-                    />
+                <div role="img" aria-label={`${title}. ${summary}`}>
+                    {type === 'pie' ? (
+                        <Pie
+                            aria-hidden="true"
+                            data={{
+                                labels: data.labels,
+                                datasets: [
+                                    {
+                                        data: data.values,
+                                        backgroundColor: PIE_COLORS,
+                                        borderColor: '#ffffff',
+                                        borderWidth: 2,
+                                    },
+                                ],
+                            }}
+                            options={{
+                                responsive: true,
+                                plugins: { legend: { display: true, position: 'bottom' } },
+                            }}
+                            height={220}
+                        />
+                    ) : (
+                        <Bar
+                            aria-hidden="true"
+                            data={{
+                                labels: data.labels,
+                                datasets: [
+                                    {
+                                        data: data.values,
+                                        backgroundColor: '#4d7c0f',
+                                        borderRadius: 4,
+                                    },
+                                ],
+                            }}
+                            options={{
+                                responsive: true,
+                                plugins: { legend: { display: false } },
+                                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+                            }}
+                            height={220}
+                        />
+                    )}
                 </div>
             </CardContent>
         </Card>
