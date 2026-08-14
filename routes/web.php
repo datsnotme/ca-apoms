@@ -10,6 +10,7 @@ use App\Http\Controllers\Academic\SemesterController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BackupController;
 use App\Http\Controllers\Admin\BrandingController;
+use App\Http\Controllers\Admin\DeviceController;
 use App\Http\Controllers\Admin\SyncCenterController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Advising\AdvisingController;
@@ -322,7 +323,6 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:sync.manage')->prefix('sync')->name('sync.')->group(function () {
         Route::get('/', [SyncCenterController::class, 'index'])->name('index');
-        Route::post('devices/{device}/set-local', [SyncCenterController::class, 'setLocalDevice'])->name('devices.set-local');
         Route::post('remotes', [SyncCenterController::class, 'storeRemote'])->name('remotes.store');
         Route::put('remotes/{remote}', [SyncCenterController::class, 'updateRemote'])->name('remotes.update');
         Route::delete('remotes/{remote}', [SyncCenterController::class, 'destroyRemote'])->name('remotes.destroy');
@@ -330,6 +330,13 @@ Route::middleware('auth')->group(function () {
         Route::get('history', [SyncCenterController::class, 'history'])->name('history');
         Route::get('conflicts', [SyncCenterController::class, 'conflicts'])->name('conflicts');
         Route::post('conflicts/{conflict}/resolve', [SyncCenterController::class, 'resolveConflict'])->name('conflicts.resolve');
+
+        Route::get('devices', [DeviceController::class, 'index'])->name('devices.index');
+        Route::post('devices', [DeviceController::class, 'store'])->name('devices.store');
+        Route::put('devices/{device}', [DeviceController::class, 'update'])->name('devices.update');
+        Route::post('devices/{device}/revoke', [DeviceController::class, 'revoke'])->name('devices.revoke');
+        Route::post('devices/{device}/reissue-token', [DeviceController::class, 'reissueToken'])->name('devices.reissue-token');
+        Route::post('devices/{device}/set-local', [DeviceController::class, 'setLocal'])->name('devices.set-local');
     });
 });
 

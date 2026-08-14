@@ -186,11 +186,23 @@ export default function Index({
                 <Card>
                     <CardHeader
                         title="Devices"
-                        description="Every device registered against this database (php artisan sync:register-device)."
+                        description="Every device registered against this database."
+                        actions={
+                            <Link href={route('sync.devices.index')} className="text-sm font-medium text-brand-700 hover:text-brand-900">
+                                Manage Devices →
+                            </Link>
+                        }
                     />
                     <CardContent>
                         {devices.length === 0 ? (
-                            <EmptyState title="No devices registered yet" />
+                            <EmptyState
+                                title="No devices registered yet"
+                                action={
+                                    <Link href={route('sync.devices.index')} className="text-sm font-medium text-brand-700 hover:text-brand-900">
+                                        Register a device →
+                                    </Link>
+                                }
+                            />
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">

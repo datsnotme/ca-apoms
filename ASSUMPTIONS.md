@@ -1466,3 +1466,35 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     explicit ids at all) and pushed it — every single FK on Instance B's resulting rows correctly
     pointed at Instance B's own, independently-assigned local ids (verified column-by-column), never
     the raw ids that traveled on the wire.
+- **Device Management UI (Phase 6 follow-up, complete)**: one of the four slices Phase 6 originally
+  bundled (table expansion, Device Management UI, file/document sync, LAN deployment docs) — the User
+  explicitly chose this slice next; file/document sync and deployment docs remain undesigned.
+  - New `DeviceController` (`/sync/devices`, `permission:sync.manage`, no dedicated Policy — same
+    gating as the rest of Sync Center): register a device from the web UI instead of only via
+    `sync:register-device`, edit a device's name/role hint, revoke (deletes its Sanctum token, marks
+    `status: revoked`, clears `is_local` — the `Device` row itself is kept, since `sync_changes`/
+    `sync_checkpoints`/`sync_runs` all reference it and revoking shouldn't orphan or cascade-delete
+    that history), and reissue a token (for a lost/compromised token, or to reactivate a revoked
+    device — deletes the old token first so a device never ends up with two live ones). `setLocal()`
+    moved here from `SyncCenterController` (the route path is unchanged).
+  - The "Authenticates As" field is a dropdown of only the users who actually have `sync.manage`
+    (`User::permission('sync.manage')`, from Spatie's `HasPermissions` trait), not free-text — avoids
+    the register-then-discover-they're-ineligible round trip the console command's `$user->can(...)`
+    check produces. `DeviceRequest`'s `withValidator()` still re-checks server-side (mirrors the
+    console command's check) in case of a stale dropdown or direct API misuse.
+  - **One-time token reveal**: a newly issued token is session-flashed (`new_device_token`), not a
+    shared Inertia prop — deliberately page-specific (a raw bearer token is sensitive) and naturally
+    "shown once," the same mechanism `flash.success`/`flash.error` already use, just read directly in
+    `DeviceController::index()` instead of through the global `HandleInertiaRequests` share. A
+    `TokenRevealModal` opens automatically when the prop is present.
+  - Verified: 9 new tests (`DeviceManagementTest` — permission gating, register/list with the
+    eligible-users dropdown, registering for an ineligible user is rejected, edit leaves owner/token
+    untouched, revoke deletes the token but keeps the record, reissue invalidates the old token and
+    issues exactly one new one, reissuing for an ownerless device fails gracefully, and `set-local`
+    still works after the move), full regression green (457/457), Pint/`tsc --noEmit` clean, and a
+    full manual browser walkthrough against the real dev server: registered a device through the
+    actual form, confirmed the token reveal modal showed the real plaintext token and that both
+    modals were genuinely closed afterward (not just visually stacked — checked via computed
+    `offsetParent`), confirmed the device appeared correctly in the table with all four row actions,
+    and confirmed the sidebar's Sync Center group now lists Devices alongside Overview/History/
+    Conflicts.

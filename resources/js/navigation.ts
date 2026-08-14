@@ -95,6 +95,7 @@ export const NAVIGATION: NavItem[] = [
         permission: 'sync.manage',
         children: [
             { label: 'Overview', routeName: 'sync.index', permission: 'sync.manage' },
+            { label: 'Devices', routeName: 'sync.devices.index', permission: 'sync.manage' },
             { label: 'History', routeName: 'sync.history', permission: 'sync.manage' },
             { label: 'Conflicts', routeName: 'sync.conflicts', permission: 'sync.manage' },
         ],

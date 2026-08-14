@@ -34,14 +34,6 @@ class SyncCenterController extends Controller
         ]);
     }
 
-    public function setLocalDevice(Device $device): RedirectResponse
-    {
-        Device::where('is_local', true)->update(['is_local' => false]);
-        $device->update(['is_local' => true]);
-
-        return back()->with('success', "{$device->name} set as this instance's device identity.");
-    }
-
     public function storeRemote(SyncRemoteRequest $request): RedirectResponse
     {
         SyncRemote::create($request->validated());
