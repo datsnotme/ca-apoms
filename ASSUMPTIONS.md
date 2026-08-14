@@ -1553,8 +1553,7 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     `academic_years` rows had an outbox entry at all. The same gap existed across `colleges`,
     `year_levels`, `departments`, `programs`, `courses`, `curricula`, `semesters`, `class_sections`,
     `document_categories` — 168 rows total lacked outbox history. `resolveForeignKeys()` correctly
-    threw rather than
-    silently skipping (Phase 6's designed behavior), which is what surfaced this. Formalized the fix
+    threw rather than silently skipping (Phase 6's designed behavior), which is what surfaced this. Formalized the fix
     as a new `sync:backfill-outbox` command (`app/Console/Commands/BackfillSyncOutbox.php`) instead of
     leaving it as an ad hoc script: iterates every table in `SyncService::syncedTables()` (a new
     public accessor added alongside the existing `modelFor()`), writes one synthetic `created` outbox
@@ -1576,3 +1575,44 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     changes was a clean no-op (0 uploaded); replacing the College logo through a real re-upload
     (new path, new bytes) and pushing again correctly re-transferred only that one file and Instance
     B's copy updated to the new hash.
+- **LAN deployment docs (Phase 6 follow-up, complete)**: the fourth and final slice Phase 6
+  originally bundled. New `LAN_DEPLOYMENT.md`, deliberately kept separate from the existing
+  `DEPLOYMENT.md` rather than folded into it — `DEPLOYMENT.md` targets a dedicated Linux host with a
+  real domain and always-HTTPS; this document targets the specific topology the whole hybrid-sync
+  plan was actually designed around, confirmed in `ASSUMPTIONS.md`'s own Post-Launch section: **the
+  Administrator's own Windows/XAMPP PC as the office's on-premises hub**, with Dean/Head/Faculty
+  reaching it as plain LAN browser clients — no install, no account, no local database of their own.
+  - **Explicitly scoped away from sync setup.** LAN client access (Dean/Head/Faculty opening a
+    browser to the Admin PC) and syncing the Admin PC's data to a future cloud instance (Sync
+    Center, `/sync`) are two unrelated concerns that are easy to conflate given both involve
+    "networking" — the doc says so up front so a reader doesn't go looking for Device registration
+    steps that don't apply to them.
+  - **Covers what's genuinely different from a standard server deployment**: giving the Admin PC a
+    stable LAN address (DHCP reservation preferred over a manually-set static IP, to avoid a
+    reader needing to know the router's DHCP pool range), configuring XAMPP's Apache (not
+    `php artisan serve` — the same `cli-server`/`mysqldump` reason `DEPLOYMENT.md` already
+    documents for Phase 8C) via a vhost, a Windows Firewall rule scoped to the LAN subnet and
+    Private profile specifically (not "Any"), the `SESSION_DOMAIN=null` requirement for a
+    multi-client LAN setup to keep everyone logged in, and a pragmatic take on HTTPS: optional on a
+    genuinely closed office LAN (a materially different threat model than `DEPLOYMENT.md`'s
+    internet-facing "always HTTPS" rule), but recommended via a self-signed cert if the LAN includes
+    any untrusted devices (e.g. a shared guest Wi-Fi subnet).
+  - **Documents a real, previously-undocumented operational gotcha as a first-class troubleshooting
+    step, not an afterthought**: XAMPP's bundled MySQL/MariaDB has a confirmed tendency to silently
+    stop under long-running use without the Control Panel GUI clearly reflecting it (encountered
+    firsthand during this project's own development), and the GUI can hang rather than show a clean
+    stopped state — documented fix is restarting via `C:\xampp\mysql_start.bat` directly rather than
+    through the Control Panel, with a note that recurring instances of this are a sign to move off
+    XAMPP's bundled MySQL for unattended hosting.
+  - **Post-setup checklist deliberately includes a negative test**: confirming the app is *not*
+    reachable from a guest Wi-Fi subnet, if one exists — the point of scoping the firewall rule to
+    the LAN subnet/Private profile is easy to silently undermine (e.g. a firewall rule accidentally
+    left on the Public profile), and a checklist that only tests the positive case ("it works from
+    the LAN") would never catch that regression.
+  - Not independently tested with a second physical machine or router (this is a documentation
+    deliverable, not new application code — nothing here changes the running application, so there's
+    no new Pest coverage or live-proof required, consistent with how `DEPLOYMENT.md`/`INSTALLATION.md`
+    were written and verified by review rather than an end-to-end infrastructure rehearsal).
+
+This closes all four slices Phase 6 originally bundled — table expansion, Device Management UI,
+file/document sync, and LAN deployment docs — completing the hybrid-sync plan through Phase 6.

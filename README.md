@@ -417,6 +417,7 @@ npm run build
 - `ASSUMPTIONS.md` — practical decisions made where the spec didn't specify a value.
 - `INSTALLATION.md` — detailed local development setup.
 - `DEPLOYMENT.md` — production/staging deployment guide.
+- `LAN_DEPLOYMENT.md` — running the Administrator's PC as the office LAN hub (Windows/XAMPP).
 - `BACKUP_RESTORE.md` — operational guide for the Backup and Restore module.
 - `USER_GUIDE.md` — role-by-role guide to using the application.
 - `API_DOCUMENTATION.md` — the Inertia route surface, organized by module.
