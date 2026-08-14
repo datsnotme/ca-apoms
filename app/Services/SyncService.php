@@ -9,11 +9,15 @@ use App\Models\Course;
 use App\Models\Curriculum;
 use App\Models\Department;
 use App\Models\Device;
+use App\Models\Document;
+use App\Models\DocumentCategory;
+use App\Models\DocumentVersion;
 use App\Models\EnrollmentCourse;
 use App\Models\Program;
 use App\Models\Section;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\StudentDocument;
 use App\Models\StudentEnrollment;
 use App\Models\StudentGrade;
 use App\Models\SyncChange;
@@ -26,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -83,6 +88,10 @@ class SyncService
         'student_enrollments' => StudentEnrollment::class,
         'enrollment_courses' => EnrollmentCourse::class,
         'student_grades' => StudentGrade::class,
+        'document_categories' => DocumentCategory::class,
+        'documents' => Document::class,
+        'document_versions' => DocumentVersion::class,
+        'student_documents' => StudentDocument::class,
     ];
 
     /**
@@ -104,6 +113,10 @@ class SyncService
         'student_enrollments',
         'enrollment_courses',
         'student_grades',
+        'document_categories',
+        'documents',
+        'document_versions',
+        'student_documents',
     ];
 
     /**
@@ -132,6 +145,27 @@ class SyncService
         'student_enrollments' => ['student_id' => 'students', 'semester_id' => 'semesters'],
         'enrollment_courses' => ['student_enrollment_id' => 'student_enrollments', 'class_section_id' => 'class_sections'],
         'student_grades' => ['enrollment_course_id' => 'enrollment_courses'],
+        'documents' => ['document_category_id' => 'document_categories', 'department_id' => 'departments'],
+        'document_versions' => ['document_id' => 'documents'],
+        'student_documents' => ['student_id' => 'students'],
+    ];
+
+    /**
+     * Declares which synced tables carry an actual uploaded file alongside
+     * their row data, and where that file lives — the row/DB-column sync
+     * above only ever moved the *path string*; these are the ones whose
+     * bytes also need to travel. `FacultyDocument` is deliberately absent:
+     * its owning relationship is `user_id`, and `users` isn't a synced
+     * table (out of scope — see ASSUMPTIONS.md), so there's no uuid to
+     * translate that FK through even if the row itself were added to
+     * SYNCED_MODELS. See downloadMissingFiles()/uploadChangedFiles().
+     *
+     * @var array<string, array{column: string, disk: string}>
+     */
+    private const FILE_COLUMNS = [
+        'colleges' => ['column' => 'logo_path', 'disk' => 'public'],
+        'document_versions' => ['column' => 'file_path', 'disk' => 'local'],
+        'student_documents' => ['column' => 'file_path', 'disk' => 'local'],
     ];
 
     /**
@@ -330,6 +364,7 @@ class SyncService
                 ->put('sync_version', max((int) $local->sync_version, (int) $change['version']))
                 ->put('origin_device_id', $sourceDeviceId)
                 ->toArray();
+            $mergedAttributes = $this->resolveFileAttributes($entityTable, $change['entity_uuid'], $mergedAttributes);
 
             $local->forceFill($mergedAttributes)->saveQuietly();
             $counts['merged']++;
@@ -416,11 +451,13 @@ class SyncService
         $snapshot = $change['snapshot'] ?? [];
         $resolvedFks = $this->resolveForeignKeys($change['entity_table'], $snapshot);
 
-        return collect($snapshot)
-            ->except(['id', 'created_at', 'updated_at', '_fk_uuids'])
+        $attributes = collect($snapshot)
+            ->except(['id', 'created_at', 'updated_at', '_fk_uuids', '_file_hash'])
             ->merge($resolvedFks)
             ->put('origin_device_id', $sourceDeviceId)
             ->toArray();
+
+        return $this->resolveFileAttributes($change['entity_table'], $change['entity_uuid'], $attributes);
     }
 
     /**
@@ -457,6 +494,12 @@ class SyncService
             $payload = $response->json();
             $counts = DB::transaction(fn () => $this->applyIncoming($payload['changes'] ?? [], $device->id));
 
+            // Deliberately outside the DB transaction above: file transfer
+            // is a separate concern from the row-level apply, and a file
+            // failure shouldn't roll back row changes that already
+            // applied correctly (see downloadMissingFiles()'s docblock).
+            $fileCounts = $this->downloadMissingFiles($payload['changes'] ?? [], $baseUrl, $bearerToken);
+
             $checkpoint->update([
                 'last_synced_at' => now(),
                 'last_token' => (string) ($payload['next_since_id'] ?? $checkpoint->last_token),
@@ -470,6 +513,9 @@ class SyncService
                 'deleted_count' => $counts['deleted'],
                 'conflict_count' => $counts['conflicted'],
                 'status' => 'success',
+                'error_message' => $fileCounts['failed'] > 0
+                    ? "{$fileCounts['failed']} file(s) failed to transfer — will retry next sync."
+                    : null,
             ]);
         } catch (\Throwable $e) {
             $run->update([
@@ -519,6 +565,7 @@ class SyncService
                 ->throw();
 
             $counts = $response->json();
+            $fileCounts = $this->uploadChangedFiles($outgoing['changes'], $baseUrl, $bearerToken);
 
             $checkpoint->update([
                 'last_synced_at' => now(),
@@ -533,6 +580,9 @@ class SyncService
                 'deleted_count' => $counts['deleted'] ?? 0,
                 'conflict_count' => $counts['conflicted'] ?? 0,
                 'status' => 'success',
+                'error_message' => $fileCounts['failed'] > 0
+                    ? "{$fileCounts['failed']} file(s) failed to transfer — will retry next sync."
+                    : null,
             ]);
         } catch (\Throwable $e) {
             $run->update([
@@ -607,9 +657,10 @@ class SyncService
             if ($local && $conflict->remote_snapshot) {
                 $resolvedFks = $this->resolveForeignKeys($conflict->entity_table, $conflict->remote_snapshot);
                 $attributes = collect($conflict->remote_snapshot)
-                    ->except(['id', 'uuid', 'sync_version', 'created_at', 'updated_at', '_fk_uuids'])
+                    ->except(['id', 'uuid', 'sync_version', 'created_at', 'updated_at', '_fk_uuids', '_file_hash'])
                     ->merge($resolvedFks)
                     ->toArray();
+                $attributes = $this->resolveFileAttributes($conflict->entity_table, $conflict->entity_uuid, $attributes);
                 $local->forceFill($attributes)->save();
             }
         }
@@ -620,6 +671,177 @@ class SyncService
             'resolved_by' => $resolvedById,
             'resolved_at' => now(),
         ]);
+    }
+
+    /**
+     * The model class for a synced table, or null — a public accessor so
+     * SyncFileController can resolve `{table}` from a route parameter
+     * without SYNCED_MODELS needing to stop being private.
+     *
+     * @return class-string<Model>|null
+     */
+    public function modelFor(string $entityTable): ?string
+    {
+        return self::SYNCED_MODELS[$entityTable] ?? null;
+    }
+
+    /**
+     * The full synced-table → model map, for callers (BackfillSyncOutbox)
+     * that need to iterate every synced table rather than resolve one.
+     *
+     * @return array<string, class-string<Model>>
+     */
+    public function syncedTables(): array
+    {
+        return self::SYNCED_MODELS;
+    }
+
+    /**
+     * @return array{column: string, disk: string}|null
+     */
+    public function fileColumnFor(string $entityTable): ?array
+    {
+        return self::FILE_COLUMNS[$entityTable] ?? null;
+    }
+
+    public function resolveSyncedFilePath(string $entityTable, string $entityUuid): string
+    {
+        return $this->resolveFilePath($entityTable, $entityUuid);
+    }
+
+    /**
+     * Whether $change represents an actual change to the file column
+     * itself — not every update to a file-bearing row touches its file
+     * (e.g. editing a Document's title), and re-transferring the file on
+     * every such update would be wasteful. A 'created' change always
+     * needs the file (first time either side has seen this row); an
+     * 'updated'/'merged' change only needs it when the file column is
+     * specifically among what changed.
+     */
+    private function needsFileTransfer(array $change): bool
+    {
+        if (! isset(self::FILE_COLUMNS[$change['entity_table']])) {
+            return false;
+        }
+
+        if ($change['operation'] === 'deleted') {
+            return false;
+        }
+
+        if ($change['operation'] === 'created') {
+            return true;
+        }
+
+        $column = self::FILE_COLUMNS[$change['entity_table']]['column'];
+
+        return in_array($column, $change['changed_fields'] ?? [], true);
+    }
+
+    /**
+     * Pull-side file transfer: for each applied change that touched a
+     * file-bearing row's file, fetch the bytes from the same remote we
+     * just pulled the row data from — never a different, potentially
+     * unreachable address; whatever base_url/token got the row change
+     * also gets the file. Skips entities whose local file already
+     * matches the incoming hash (a no-op re-sync, or a merge/fast-forward
+     * that happened to reapply the same content). A transfer failure is
+     * caught, not thrown — the row already applied successfully and that
+     * shouldn't be undone over a file that can be retried next sync (the
+     * local file still won't match the hash, so it naturally retries).
+     *
+     * @param  array<int, array<string, mixed>>  $changes
+     * @return array{downloaded: int, skipped: int, failed: int}
+     */
+    public function downloadMissingFiles(array $changes, string $baseUrl, string $bearerToken): array
+    {
+        $counts = ['downloaded' => 0, 'skipped' => 0, 'failed' => 0];
+
+        foreach ($changes as $change) {
+            if (! $this->needsFileTransfer($change)) {
+                continue;
+            }
+
+            $fileConf = self::FILE_COLUMNS[$change['entity_table']];
+            $incomingHash = $change['snapshot']['_file_hash'] ?? null;
+
+            if ($incomingHash === null) {
+                $counts['skipped']++;
+
+                continue;
+            }
+
+            $localPath = $this->resolveFilePath($change['entity_table'], $change['entity_uuid']);
+            $disk = Storage::disk($fileConf['disk']);
+
+            if ($disk->exists($localPath) && hash('sha256', $disk->get($localPath)) === $incomingHash) {
+                $counts['skipped']++;
+
+                continue;
+            }
+
+            try {
+                $response = Http::withToken($bearerToken)
+                    ->timeout(60)
+                    ->get(rtrim($baseUrl, '/')."/api/sync/files/{$change['entity_table']}/{$change['entity_uuid']}")
+                    ->throw();
+
+                $disk->put($localPath, $response->body());
+                $counts['downloaded']++;
+            } catch (\Throwable) {
+                $counts['failed']++;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
+     * Push-side file transfer: for each of our own outgoing changes that
+     * touched a file-bearing row's file, upload the bytes (which we, as
+     * the sender, already have at our own native path) to the same
+     * remote we just pushed the row data to. No "does the receiver
+     * already have this" round trip before uploading — sync runs are
+     * manual and infrequent and files are capped at 20MB (see
+     * ASSUMPTIONS.md), so the bandwidth cost of an occasional redundant
+     * upload is cheaper than an extra request; the receiving endpoint can
+     * still no-op cheaply if the content is byte-identical.
+     *
+     * @param  array<int, array<string, mixed>>  $changes
+     * @return array{uploaded: int, skipped: int, failed: int}
+     */
+    public function uploadChangedFiles(array $changes, string $baseUrl, string $bearerToken): array
+    {
+        $counts = ['uploaded' => 0, 'skipped' => 0, 'failed' => 0];
+
+        foreach ($changes as $change) {
+            if (! $this->needsFileTransfer($change)) {
+                continue;
+            }
+
+            $fileConf = self::FILE_COLUMNS[$change['entity_table']];
+            $path = $change['snapshot'][$fileConf['column']] ?? null;
+            $disk = Storage::disk($fileConf['disk']);
+
+            if (! $path || ! $disk->exists($path)) {
+                $counts['skipped']++;
+
+                continue;
+            }
+
+            try {
+                Http::withToken($bearerToken)
+                    ->timeout(60)
+                    ->attach('file', $disk->get($path), basename($path))
+                    ->post(rtrim($baseUrl, '/')."/api/sync/files/{$change['entity_table']}/{$change['entity_uuid']}")
+                    ->throw();
+
+                $counts['uploaded']++;
+            } catch (\Throwable) {
+                $counts['failed']++;
+            }
+        }
+
+        return $counts;
     }
 
     /**
@@ -647,7 +869,62 @@ class SyncService
             $snapshot['_fk_uuids'] = $fkUuids;
         }
 
+        // Computed fresh from the actual bytes, not persisted — a stored
+        // hash column would need every upload path (BrandingController,
+        // DocumentVersionController, StudentDocumentController, ...) to
+        // remember to keep it updated, and would go stale the moment one
+        // didn't. Reading+hashing a ≤20MB file (see ASSUMPTIONS.md for the
+        // app's actual upload size ceilings) only happens when this row
+        // appears in a sync batch, not on every request.
+        if ($fileConf = self::FILE_COLUMNS[$model->getTable()] ?? null) {
+            $path = $model->{$fileConf['column']};
+            if ($path && Storage::disk($fileConf['disk'])->exists($path)) {
+                $snapshot['_file_hash'] = hash('sha256', Storage::disk($fileConf['disk'])->get($path));
+            }
+        }
+
         return $snapshot;
+    }
+
+    /**
+     * Every synced table in FILE_COLUMNS gets its file column rewritten to
+     * this deterministic, uuid-keyed path on receipt — never a blind copy
+     * of the sender's raw path string. The native paths these controllers
+     * generate (e.g. `documents/{document_id}/xyz.pdf`,
+     * `branding/xyz.jpg`) embed the *sender's own* auto-increment id or are
+     * otherwise only meaningful in the sender's own storage layout; once
+     * two instances have independently assigned different local ids to the
+     * "same" (by uuid) row, that path is wrong on the receiving side. The
+     * uuid is the one thing guaranteed portable, so every instance that
+     * *received* (rather than originated) this entity's file stores it
+     * under a namespace keyed by that uuid instead.
+     */
+    private function resolveFilePath(string $entityTable, string $entityUuid): string
+    {
+        return "synced/{$entityTable}/{$entityUuid}";
+    }
+
+    /**
+     * Overrides a file-bearing table's file column with resolveFilePath()'s
+     * deterministic value, but only when that column is actually present
+     * in $attributes — for a full snapshot (create/fast-forward) it always
+     * is; for a field-level merge it's only present when the file itself
+     * was one of the fields that actually changed, and this must not
+     * inject a path change into a merge that never touched the file.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function resolveFileAttributes(string $entityTable, string $entityUuid, array $attributes): array
+    {
+        $fileConf = self::FILE_COLUMNS[$entityTable] ?? null;
+        if (! $fileConf || ! array_key_exists($fileConf['column'], $attributes)) {
+            return $attributes;
+        }
+
+        $attributes[$fileConf['column']] = $this->resolveFilePath($entityTable, $entityUuid);
+
+        return $attributes;
     }
 
     /**

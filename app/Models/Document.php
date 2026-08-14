@@ -19,6 +19,11 @@ class Document extends Model
 
     protected $fillable = ['document_category_id', 'department_id', 'title', 'description', 'uploaded_by'];
 
+    protected function casts(): array
+    {
+        return ['sync_version' => 'integer'];
+    }
+
     public function category(): BelongsTo
     {
         return $this->belongsTo(DocumentCategory::class, 'document_category_id');

@@ -8,11 +8,15 @@ use App\Models\College;
 use App\Models\Course;
 use App\Models\Curriculum;
 use App\Models\Department;
+use App\Models\Document;
+use App\Models\DocumentCategory;
+use App\Models\DocumentVersion;
 use App\Models\EnrollmentCourse;
 use App\Models\Program;
 use App\Models\Section;
 use App\Models\Semester;
 use App\Models\Student;
+use App\Models\StudentDocument;
 use App\Models\StudentEnrollment;
 use App\Models\StudentGrade;
 use App\Models\YearLevel;
@@ -69,5 +73,15 @@ class AppServiceProvider extends ServiceProvider
         Course::observe(SyncChangeObserver::class);
         ClassSection::observe(SyncChangeObserver::class);
         Section::observe(SyncChangeObserver::class);
+
+        // File/document sync — the row *and* its actual file bytes (see
+        // SyncService::FILE_COLUMNS and downloadMissingFiles()/
+        // uploadChangedFiles()). FacultyDocument is deliberately excluded:
+        // its owning relationship is user_id, and User accounts aren't
+        // synced — see ASSUMPTIONS.md.
+        DocumentCategory::observe(SyncChangeObserver::class);
+        Document::observe(SyncChangeObserver::class);
+        DocumentVersion::observe(SyncChangeObserver::class);
+        StudentDocument::observe(SyncChangeObserver::class);
     }
 }

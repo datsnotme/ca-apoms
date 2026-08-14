@@ -5,12 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class DocumentVersion extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'document_id', 'version_number', 'file_path', 'original_filename',
@@ -19,7 +20,7 @@ class DocumentVersion extends Model
 
     protected function casts(): array
     {
-        return ['uploaded_at' => 'datetime'];
+        return ['uploaded_at' => 'datetime', 'sync_version' => 'integer'];
     }
 
     public function document(): BelongsTo

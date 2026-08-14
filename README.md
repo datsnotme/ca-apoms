@@ -336,6 +336,7 @@ cp .env.example .env
 php artisan key:generate
 # edit .env: set DB_DATABASE/DB_USERNAME/DB_PASSWORD for your MySQL server
 php artisan migrate --seed
+php artisan storage:link
 npm run build
 php artisan serve
 ```

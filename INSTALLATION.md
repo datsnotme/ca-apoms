@@ -83,7 +83,17 @@ php artisan migrate:fresh --seed
 **`migrate:fresh` drops every table.** Never run it against a database with real institutional
 data.
 
-## 5. Build frontend assets
+## 5. Link the public storage disk
+
+```bash
+php artisan storage:link
+```
+
+Creates `public/storage` as a symlink to `storage/app/public` — required for uploaded files
+served from the `public` disk (the college/system logo, user profile photos) to resolve.
+Without this, those images 404 even though the underlying file exists on disk.
+
+## 6. Build frontend assets
 
 For local development with hot module reloading:
 
@@ -97,7 +107,7 @@ Or build once for a `php artisan serve`-only workflow:
 npm run build
 ```
 
-## 6. Serve the application
+## 7. Serve the application
 
 ```bash
 php artisan serve
@@ -115,3 +125,6 @@ seed table in `README.md`.
   with `npm run build` if you're not using the dev server.
 - **419 Page Expired on login**: usually a stale session cookie from a previous `APP_KEY`;
   clear cookies for the site or run `php artisan config:clear`.
+- **Uploaded logo/profile photo shows as a broken image**: step 5 (`php artisan storage:link`)
+  wasn't run, or `public/storage` was deleted — the URL the app generates for a `public`-disk
+  file only resolves once that symlink exists.

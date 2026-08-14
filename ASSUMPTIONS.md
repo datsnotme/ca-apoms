@@ -1498,3 +1498,81 @@ committed to this repo) — summarized here for anyone who doesn't have that fil
     `offsetParent`), confirmed the device appeared correctly in the table with all four row actions,
     and confirmed the sidebar's Sync Center group now lists Devices alongside Overview/History/
     Conflicts.
+- **File/document sync (Phase 6 follow-up, complete)**: the third of the four slices Phase 6
+  originally bundled — LAN deployment docs remain undesigned. Extends row-level sync to the three
+  tables that actually carry an uploaded file: `colleges` (logo), `documents`/`document_versions`,
+  `student_documents`. `faculty_documents` is deliberately, permanently out of scope: its owning
+  relationship is `user_id`, and `users` was never a synced table (out of scope since Phase 1), so
+  there's no uuid to translate that FK through even if the row itself joined `SYNCED_MODELS`.
+  - **Hash-based, on-demand change detection — not a persisted column.** An early design synced a
+    `file_hash` column, computed and stored by every upload controller; scrapped before
+    implementation because it required touching three unrelated controllers (`BrandingController`,
+    `DocumentVersionController`, `StudentDocumentController`) and risked staleness the moment any of
+    them forgot to update it. Instead `SyncService::FILE_COLUMNS` declares which synced tables carry
+    a file and on which disk, and `snapshotFor()` computes `hash('sha256', ...)` fresh from the
+    actual file bytes only when building a sync payload, carried as an ephemeral `_file_hash` key
+    inside the snapshot — same convention as Phase 6's `_fk_uuids`.
+  - **Uuid-keyed synced-file paths, not the sender's native path.** A row's own native upload path
+    (e.g. `documents/{document_id}/xyz.pdf`) embeds the *sender's* own non-portable auto-increment
+    id — copying that string blindly during apply would be wrong the moment two instances have
+    assigned the same conceptual row different local ids. `resolveFilePath()` instead returns a
+    deterministic `synced/{table}/{uuid}` path; `resolveFileAttributes()` rewrites the file column to
+    that path, wired into all three apply sites (create/fast-forward, field-level merge, and
+    `applyResolution()`'s `take_remote` branch — the same three-call-site pattern `resolveForeignKeys()`
+    established in Phase 6). Only rows *received* via sync get this rewritten path; a row's own
+    local/native origin keeps its native path.
+  - **File transfer direction always mirrors the row-sync direction that triggered it.**
+    `downloadMissingFiles()` runs after a PULL and fetches FROM the same remote just pulled from;
+    `uploadChangedFiles()` runs after a PUSH and uploads TO the same remote just pushed to. Neither
+    assumes the other side can independently reach back — deliberately matching the LAN-hub/cloud
+    topology (Admin's PC as hub, Dean/Head/Faculty over LAN or a future cloud link) this whole engine
+    was built around.
+  - **`needsFileTransfer()` gating**: skips re-transferring on a metadata-only update — only
+    transfers when the change's operation is `created`, or the file column is specifically present in
+    `changed_fields`. This matches how uploads actually work in this app: every real re-upload calls
+    Laravel's `store()`, which always mints a new random filename, so a real content change always
+    changes the path column too. (Confirmed against `BrandingController`, not assumed — a naive
+    in-place-overwrite test that skipped the real upload flow initially made this look broken; it
+    isn't, real uploads always change the path.)
+  - **File-transfer failures are isolated from row-apply failures.** File transfer runs outside the
+    `DB::transaction()` (Phase 5) wrapping row-level `applyIncoming()` — a file failure can't roll
+    back an already-successful row apply. Failures are counted and surfaced via `SyncRun.error_message`
+    (the run's `status` still reads `success`), and naturally retried next sync since the local file
+    still won't match the hash.
+  - New `Api\SyncFileController` (`GET`/`POST /api/sync/files/{table}/{uuid}`, same
+    `auth:sanctum` + `permission:sync.manage` group as the row endpoints, `where()`-constrained to
+    `[a-z_]+`/`[0-9a-f-]{36}`) resolves the file path strictly via the DB row looked up by uuid —
+    never trusts a client-supplied path.
+  - **Found and fixed a real, pre-existing outbox gap while proving this live** (not part of the
+    file-sync design itself, but what made the live proof initially fail): the "known, deliberate
+    limitation" Phase 6 already documented above — a pre-existing row that predates its table joining
+    the synced set has a backfilled uuid but no outbox history — turned out to affect far more rows
+    than the single `College` example Phase 6 called out. A first-ever cold sync to a fresh instance
+    pulled in a `Curriculum` row whose `effective_academic_year_id` pointed at an `AcademicYear` that
+    had *never* been touched since Phase 6 added it to the synced set — only 1 of this dev database's
+    `academic_years` rows had an outbox entry at all. The same gap existed across `colleges`,
+    `year_levels`, `departments`, `programs`, `courses`, `curricula`, `semesters`, `class_sections`,
+    `document_categories` — 168 rows total lacked outbox history. `resolveForeignKeys()` correctly
+    threw rather than
+    silently skipping (Phase 6's designed behavior), which is what surfaced this. Formalized the fix
+    as a new `sync:backfill-outbox` command (`app/Console/Commands/BackfillSyncOutbox.php`) instead of
+    leaving it as an ad hoc script: iterates every table in `SyncService::syncedTables()` (a new
+    public accessor added alongside the existing `modelFor()`), writes one synthetic `created` outbox
+    entry per row still missing one, safe to run repeatedly. A real deployment bootstrapping a new
+    instance via backup/restore should run this once afterward so the restored instance's pre-existing
+    reference data is immediately eligible for FK translation, not just newly-created rows going
+    forward.
+  - Verified: 17 new tests (`SyncFileTest` — FK translation for `Document`/`DocumentVersion`/
+    `StudentDocument`, `_file_hash` computation, `downloadMissingFiles()`/`uploadChangedFiles()`
+    fetch-on-mismatch/skip-on-match/fail-without-throw/skip-non-file-changes, and
+    `SyncFileController` endpoint auth/404s/exact-byte-streaming/upload-requires-existing-row) plus 4
+    new tests (`SyncBackfillOutboxTest` — writes a missing entry, doesn't duplicate an existing one,
+    idempotent across repeated runs, covers every synced table), full regression green (478/478),
+    Pint/`tsc --noEmit` clean, and a live two-instance proof against a genuinely fresh Instance B
+    (migrated, seeded with only roles/permissions/users — no reference data of its own): after running
+    `sync:backfill-outbox` on Instance A to close the gap above, pushed a College logo change, a new
+    Document+DocumentVersion, and a new Student+StudentDocument — all three files landed on Instance B
+    byte-identical to the source (verified by sha256, not just "file exists"); a second push with no
+    changes was a clean no-op (0 uploaded); replacing the College logo through a real re-upload
+    (new path, new bytes) and pushing again correctly re-transferred only that one file and Instance
+    B's copy updated to the new hash.

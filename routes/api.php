@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SyncController;
+use App\Http\Controllers\Api\SyncFileController;
 use Illuminate\Support\Facades\Route;
 
 // Sync API (Phase 2 — see plans/quirky-popping-parnas.md). Sanctum-token
@@ -15,4 +16,11 @@ Route::middleware(['auth:sanctum', 'permission:sync.manage'])
         Route::get('status', [SyncController::class, 'status'])->name('status');
         Route::get('pull', [SyncController::class, 'pull'])->name('pull');
         Route::post('push', [SyncController::class, 'push'])->name('push');
+
+        Route::get('files/{table}/{uuid}', [SyncFileController::class, 'download'])
+            ->where(['table' => '[a-z_]+', 'uuid' => '[0-9a-f-]{36}'])
+            ->name('files.download');
+        Route::post('files/{table}/{uuid}', [SyncFileController::class, 'upload'])
+            ->where(['table' => '[a-z_]+', 'uuid' => '[0-9a-f-]{36}'])
+            ->name('files.upload');
     });

@@ -30,6 +30,7 @@ class StudentDocument extends Model
             'verification_status' => DocumentVerificationStatus::class,
             'uploaded_at' => 'datetime',
             'verified_at' => 'datetime',
+            'sync_version' => 'integer',
         ];
     }
 
