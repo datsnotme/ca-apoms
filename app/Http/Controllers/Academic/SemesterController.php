@@ -25,15 +25,6 @@ class SemesterController extends Controller
         ]);
     }
 
-    public function create(): Response
-    {
-        $this->authorize('create', Semester::class);
-
-        return Inertia::render('AcademicYears/SemesterForm', [
-            'academicYears' => AcademicYear::query()->orderByDesc('start_year')->get(['id', 'start_year', 'end_year']),
-        ]);
-    }
-
     public function store(SemesterRequest $request): RedirectResponse
     {
         $semester = Semester::create($request->validated());

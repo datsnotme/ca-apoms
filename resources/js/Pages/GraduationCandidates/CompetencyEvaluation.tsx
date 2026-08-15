@@ -53,7 +53,7 @@ function RatingRow({
         <tr>
             <td className="px-3 py-2">
                 {indicator.title}
-                {indicator.description && <p className="text-xs text-slate-400">{indicator.description}</p>}
+                {indicator.description && <p className="text-xs text-slate-900">{indicator.description}</p>}
             </td>
             <td className="px-3 py-2">
                 <select
@@ -144,14 +144,14 @@ export default function CompetencyEvaluation({
                         <div>
                             <h3 className="mb-2 text-sm font-semibold text-slate-800">Assigned Evaluators</h3>
                             {evaluators.length === 0 ? (
-                                <p className="text-sm text-slate-500">No evaluators assigned yet.</p>
+                                <p className="text-sm text-slate-900">No evaluators assigned yet.</p>
                             ) : (
                                 <ul className="mb-3 divide-y divide-slate-100 rounded-md border border-slate-200">
                                     {evaluators.map((ev) => (
                                         <li key={ev.id} className="flex items-center justify-between px-3 py-2 text-sm">
                                             <span>
                                                 {ev.evaluator.name}{' '}
-                                                <span className="text-xs text-slate-400">
+                                                <span className="text-xs text-slate-900">
                                                     ({ev.ratings.length}/{totalIndicators} rated)
                                                 </span>
                                             </span>
@@ -183,7 +183,7 @@ export default function CompetencyEvaluation({
                                     <PrimaryButton disabled={processing || !data.evaluator_id}>Assign Evaluator</PrimaryButton>
                                 </form>
                             ) : (
-                                <p className="text-xs text-slate-400">No more eligible faculty in this department to assign.</p>
+                                <p className="text-xs text-slate-900">No more eligible faculty in this department to assign.</p>
                             )}
                         </div>
                     )}
@@ -208,12 +208,12 @@ export default function CompetencyEvaluation({
                         <div>
                             <h3 className="mb-2 text-sm font-semibold text-slate-800">Your Ratings</h3>
                             {competencyCategories.length === 0 ? (
-                                <p className="text-sm text-slate-500">No competency indicators have been defined yet.</p>
+                                <p className="text-sm text-slate-900">No competency indicators have been defined yet.</p>
                             ) : (
                                 <div className="flex flex-col gap-4">
                                     {competencyCategories.map((cat) => (
                                         <div key={cat.id}>
-                                            <p className="mb-1 text-xs font-semibold uppercase text-slate-500">{cat.name}</p>
+                                            <p className="mb-1 text-xs font-semibold uppercase text-slate-900">{cat.name}</p>
                                             <div className="overflow-hidden rounded-md border border-slate-200">
                                                 <table className="w-full text-sm">
                                                     <tbody className="divide-y divide-slate-100">

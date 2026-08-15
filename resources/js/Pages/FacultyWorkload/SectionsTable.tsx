@@ -39,7 +39,7 @@ export default function SectionsTable({ sections }: { sections: SectionRow[] }) 
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                     <tr>
                         <th className="px-5 py-2.5">Course</th>
                         <th className="px-5 py-2.5">Section</th>

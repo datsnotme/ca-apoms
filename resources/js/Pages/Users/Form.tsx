@@ -28,6 +28,8 @@ export default function UserForm({
     roles,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -35,9 +37,11 @@ export default function UserForm({
     departments: { id: number; name: string }[];
     roles: { value: string; label: string }[];
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<UserFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<UserFormValues>({
         employee_number: initialValues.employee_number ?? '',
         surname: initialValues.surname ?? '',
         first_name: initialValues.first_name ?? '',
@@ -54,7 +58,14 @@ export default function UserForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     const needsDepartment = data.role === 'department-head' || data.role === 'faculty-member';
@@ -208,7 +219,10 @@ export default function UserForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

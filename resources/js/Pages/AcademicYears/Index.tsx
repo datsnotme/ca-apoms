@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
@@ -6,7 +7,10 @@ import EmptyState from '@/Components/ui/EmptyState';
 import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import Modal from '@/Components/Modal';
 import { PageProps } from '@/types';
+import AcademicYearForm from './Form';
+import SemesterFields from './SemesterFields';
 
 const TERM_LABELS: Record<string, string> = {
     FIRST: '1st Semester',
@@ -32,6 +36,8 @@ interface AcademicYearRow {
 export default function Index({ academicYears }: { academicYears: AcademicYearRow[] }) {
     const { auth } = usePage<PageProps>().props;
     const canManage = auth.user.permissions.includes('academic-terms.manage');
+    const [showAddSemester, setShowAddSemester] = useState(false);
+    const [showAddYear, setShowAddYear] = useState(false);
 
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Academic Years</h1>}>
@@ -40,12 +46,8 @@ export default function Index({ academicYears }: { academicYears: AcademicYearRo
             <div className="flex items-center justify-end gap-2">
                 {canManage && (
                     <>
-                        <Link href={route('semesters.create')}>
-                            <SecondaryButton>Add Semester</SecondaryButton>
-                        </Link>
-                        <Link href={route('academic-years.create')}>
-                            <PrimaryButton>Add Academic Year</PrimaryButton>
-                        </Link>
+                        <SecondaryButton onClick={() => setShowAddSemester(true)}>Add Semester</SecondaryButton>
+                        <PrimaryButton onClick={() => setShowAddYear(true)}>Add Academic Year</PrimaryButton>
                     </>
                 )}
             </div>
@@ -97,12 +99,45 @@ export default function Index({ academicYears }: { academicYears: AcademicYearRo
                                 </Link>
                             ))}
                             {year.semesters.length === 0 && (
-                                <p className="text-sm text-slate-400">No semesters added yet.</p>
+                                <p className="text-sm text-slate-900">No semesters added yet.</p>
                             )}
                         </div>
                     </Card>
                 ))}
             </div>
+
+            {canManage && (
+                <>
+                    <Modal show={showAddYear} onClose={() => setShowAddYear(false)} maxWidth="lg">
+                        <div className="p-6">
+                            <h2 className="text-lg font-medium text-slate-900">Add Academic Year</h2>
+                            <div className="mt-4">
+                                <AcademicYearForm
+                                    action={route('academic-years.store')}
+                                    method="post"
+                                    initialValues={{}}
+                                    submitLabel="Add Academic Year"
+                                    onCancel={() => setShowAddYear(false)}
+                                    onSuccess={() => setShowAddYear(false)}
+                                />
+                            </div>
+                        </div>
+                    </Modal>
+
+                    <Modal show={showAddSemester} onClose={() => setShowAddSemester(false)} maxWidth="lg">
+                        <div className="p-6">
+                            <h2 className="text-lg font-medium text-slate-900">Add Semester</h2>
+                            <div className="mt-4">
+                                <SemesterFields
+                                    academicYears={academicYears}
+                                    onCancel={() => setShowAddSemester(false)}
+                                    onSuccess={() => setShowAddSemester(false)}
+                                />
+                            </div>
+                        </div>
+                    </Modal>
+                </>
+            )}
         </AppLayout>
     );
 }

@@ -119,7 +119,7 @@ export default function Edit({ logoUrl }: { logoUrl: string | null }) {
                                 onChange={onFileChange}
                             />
 
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-slate-900">
                                 JPG or PNG, up to 2 MB. You'll be able to crop and zoom before it's saved.
                             </p>
 

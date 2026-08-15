@@ -168,12 +168,12 @@ export default function Edit({
                     <CardHeader title="Status History" description="Automatically recorded on every status change." />
                     {student.status_histories.length === 0 ? (
                         <CardContent>
-                            <p className="text-sm text-slate-500">No status changes recorded yet.</p>
+                            <p className="text-sm text-slate-900">No status changes recorded yet.</p>
                         </CardContent>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                     <tr>
                                         <th className="px-5 py-2.5">Date</th>
                                         <th className="px-5 py-2.5">From</th>

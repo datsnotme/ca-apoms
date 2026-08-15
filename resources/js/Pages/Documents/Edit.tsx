@@ -95,7 +95,7 @@ export default function Edit({
                                 <InputError message={errors.department_id} className="mt-2" />
                             </div>
                         ) : (
-                            <p className="self-end text-sm text-slate-500">This document stays filed under your own department.</p>
+                            <p className="self-end text-sm text-slate-900">This document stays filed under your own department.</p>
                         )}
 
                         <div className="sm:col-span-2">

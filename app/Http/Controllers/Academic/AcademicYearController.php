@@ -24,13 +24,6 @@ class AcademicYearController extends Controller
         ]);
     }
 
-    public function create(): Response
-    {
-        $this->authorize('create', AcademicYear::class);
-
-        return Inertia::render('AcademicYears/Create');
-    }
-
     public function store(AcademicYearRequest $request): RedirectResponse
     {
         $academicYear = AcademicYear::create($request->validated());

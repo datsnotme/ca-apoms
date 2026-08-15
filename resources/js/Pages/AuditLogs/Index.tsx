@@ -82,7 +82,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">When</th>
                                     <th className="px-5 py-2.5">User</th>
@@ -94,7 +94,7 @@ export default function Index({
                             <tbody className="divide-y divide-slate-100">
                                 {activities.data.map((a) => (
                                     <tr key={a.id} className="hover:bg-slate-50">
-                                        <td className="px-5 py-2.5 whitespace-nowrap text-slate-500">
+                                        <td className="px-5 py-2.5 whitespace-nowrap text-slate-900">
                                             {new Date(a.created_at).toLocaleString()}
                                         </td>
                                         <td className="px-5 py-2.5">{a.causer?.name ?? 'System'}</td>

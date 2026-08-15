@@ -42,7 +42,7 @@ export default function ConfirmDeleteButton({
                     <h2 className="text-lg font-medium text-slate-900">
                         Delete {itemLabel}?
                     </h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-900">
                         This archives the record. It will no longer appear in active lists,
                         but is not permanently erased.
                     </p>

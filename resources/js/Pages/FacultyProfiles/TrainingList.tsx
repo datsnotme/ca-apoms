@@ -132,11 +132,11 @@ export default function TrainingList({
             )}
 
             {trainings.length === 0 ? (
-                <p className="text-sm text-slate-500">No trainings recorded yet.</p>
+                <p className="text-sm text-slate-900">No trainings recorded yet.</p>
             ) : (
                 <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Title</th>
                                 <th className="px-3 py-2">Dates</th>
@@ -150,7 +150,7 @@ export default function TrainingList({
                                     <td className="px-3 py-2">
                                         {t.title}
                                         {(t.provider || t.training_type) && (
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-900">
                                                 {t.training_type}
                                                 {t.training_type && t.provider && ' · '}
                                                 {t.provider}

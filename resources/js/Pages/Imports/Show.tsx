@@ -48,15 +48,15 @@ export default function Show({
                     <div className="grid grid-cols-3 gap-4 px-5 py-4 text-center">
                         <div>
                             <p className="text-2xl font-semibold text-slate-900">{batch.total_rows}</p>
-                            <p className="text-xs uppercase text-slate-500">Total Rows</p>
+                            <p className="text-xs uppercase text-slate-900">Total Rows</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-brand-700">{batch.success_rows}</p>
-                            <p className="text-xs uppercase text-slate-500">Imported</p>
+                            <p className="text-xs uppercase text-slate-900">Imported</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-red-600">{batch.error_rows}</p>
-                            <p className="text-xs uppercase text-slate-500">Errors</p>
+                            <p className="text-xs uppercase text-slate-900">Errors</p>
                         </div>
                     </div>
                 </Card>
@@ -80,7 +80,7 @@ export default function Show({
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                     <tr>
                                         <th className="px-5 py-2.5">Row</th>
                                         <th className="px-5 py-2.5">Error</th>
@@ -92,7 +92,7 @@ export default function Show({
                                         <tr key={e.id}>
                                             <td className="px-5 py-2.5">{e.row_number}</td>
                                             <td className="px-5 py-2.5 text-red-600">{e.error_message}</td>
-                                            <td className="px-5 py-2.5 font-mono text-xs text-slate-500">
+                                            <td className="px-5 py-2.5 font-mono text-xs text-slate-900">
                                                 {JSON.stringify(e.raw_data)}
                                             </td>
                                         </tr>

@@ -24,7 +24,7 @@ export default function ForcePasswordChange() {
             <Head title="Set your password" />
 
             <h1 className="text-lg font-semibold text-slate-900">Set a new password</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-900">
                 This account was just created for you. Choose your own password to continue.
             </p>
 

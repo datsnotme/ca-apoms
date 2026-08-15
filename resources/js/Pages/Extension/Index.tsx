@@ -1,11 +1,14 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
 import EmptyState from '@/Components/ui/EmptyState';
 import Pagination from '@/Components/ui/Pagination';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 import { Paginated } from '@/types';
+import ExtensionProjectForm from './Form';
 
 type Status = 'proposed' | 'ongoing' | 'completed' | 'cancelled';
 
@@ -32,10 +35,18 @@ interface ExtensionProjectRow {
 export default function Index({
     projects,
     canCreate,
+    departments,
+    isAdmin,
+    statuses,
 }: {
     projects: Paginated<ExtensionProjectRow>;
     canCreate: boolean;
+    departments?: { id: number; name: string }[];
+    isAdmin?: boolean;
+    statuses?: { value: string; label: string }[];
 }) {
+    const [showCreate, setShowCreate] = useState(false);
+
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Extension Projects</h1>}>
             <Head title="Extension Projects" />
@@ -46,9 +57,7 @@ export default function Index({
                     description="Community extension initiatives, their members, activities, and beneficiaries reached."
                     actions={
                         canCreate ? (
-                            <Link href={route('extension-projects.create')}>
-                                <PrimaryButton>New Project</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>New Project</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -73,7 +82,7 @@ export default function Index({
                                         {project.start_date ?? 'No start date'}
                                         {project.end_date ? ` – ${project.end_date}` : ''}
                                     </p>
-                                    <p className="mt-2 text-xs text-slate-400">
+                                    <p className="mt-2 text-xs text-slate-900">
                                         {project.members_count} member{project.members_count === 1 ? '' : 's'} ·{' '}
                                         {project.activities_count} activit{project.activities_count === 1 ? 'y' : 'ies'} ·{' '}
                                         {project.beneficiaries_count} beneficiar{project.beneficiaries_count === 1 ? 'y' : 'ies'} · Created by{' '}
@@ -87,6 +96,28 @@ export default function Index({
 
                 <Pagination links={projects.links} from={projects.from} to={projects.to} total={projects.total} />
             </Card>
+
+            {canCreate && departments && statuses && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">New Extension Project</h2>
+                        <div className="mt-4">
+                            <ExtensionProjectForm
+                                action={route('extension-projects.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                isAdmin={Boolean(isAdmin)}
+                                statuses={statuses}
+                                showStatus={false}
+                                submitLabel="Create Project"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

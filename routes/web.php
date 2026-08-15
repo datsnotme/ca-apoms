@@ -85,16 +85,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto'])->name('profile.photo.destroy');
 
     Route::delete('departments/bulk-destroy', [DepartmentController::class, 'destroyMany'])->name('departments.destroyMany');
-    Route::resource('departments', DepartmentController::class)->except(['show']);
+    Route::resource('departments', DepartmentController::class)->except(['show', 'create']);
     Route::delete('programs/bulk-destroy', [ProgramController::class, 'destroyMany'])->name('programs.destroyMany');
-    Route::resource('programs', ProgramController::class)->except(['show']);
-    Route::resource('academic-years', AcademicYearController::class)->except(['show']);
-    Route::resource('semesters', SemesterController::class)->except(['show']);
+    Route::resource('programs', ProgramController::class)->except(['show', 'create']);
+    Route::resource('academic-years', AcademicYearController::class)->except(['show', 'create']);
+    Route::resource('semesters', SemesterController::class)->except(['show', 'create']);
 
     Route::delete('courses/bulk-destroy', [CourseController::class, 'destroyMany'])->name('courses.destroyMany');
-    Route::resource('courses', CourseController::class)->except(['show']);
+    Route::resource('courses', CourseController::class)->except(['show', 'create']);
     Route::delete('curricula/bulk-destroy', [CurriculumController::class, 'destroyMany'])->name('curricula.destroyMany');
-    Route::resource('curricula', CurriculumController::class)->except(['show']);
+    Route::resource('curricula', CurriculumController::class)->except(['show', 'create']);
     Route::post('curricula/{curriculum}/courses', [CurriculumCourseController::class, 'store'])
         ->name('curricula.courses.store');
     Route::put('curricula/{curriculum}/courses/{curriculumCourse}', [CurriculumCourseController::class, 'update'])
@@ -107,7 +107,7 @@ Route::middleware('auth')->group(function () {
     // id. See DATABASE_DESIGN.md/PROJECT_PLAN.md's Phase 7A note on this
     // exact wildcard-capture trap.
     Route::delete('students/bulk-destroy', [StudentController::class, 'destroyMany'])->name('students.destroyMany');
-    Route::resource('students', StudentController::class)->except(['show']);
+    Route::resource('students', StudentController::class)->except(['show', 'create']);
     Route::post('students/{student}/documents', [StudentDocumentController::class, 'store'])
         ->name('students.documents.store');
     Route::get('students/{student}/documents/{document}/download', [StudentDocumentController::class, 'download'])
@@ -118,7 +118,7 @@ Route::middleware('auth')->group(function () {
         ->name('students.documents.destroy');
 
     Route::resource('class-sections', ClassSectionController::class)
-        ->except(['show'])
+        ->except(['show', 'create'])
         ->parameters(['class-sections' => 'classSection']);
     Route::get('class-sections/{classSection}/roster', [ClassSectionController::class, 'roster'])
         ->name('class-sections.roster');
@@ -128,7 +128,7 @@ Route::middleware('auth')->group(function () {
         ->name('class-sections.schedules.destroy');
 
     Route::delete('enrollments/bulk-destroy', [StudentEnrollmentController::class, 'destroyMany'])->name('enrollments.destroyMany');
-    Route::resource('enrollments', StudentEnrollmentController::class)->except(['show']);
+    Route::resource('enrollments', StudentEnrollmentController::class)->except(['show', 'create']);
     Route::post('enrollments/{studentEnrollment}/courses', [EnrollmentCourseController::class, 'store'])
         ->name('enrollments.courses.store');
     Route::patch('enrollments/{studentEnrollment}/courses/{enrollmentCourse}', [EnrollmentCourseController::class, 'update'])
@@ -172,9 +172,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('students/{student}/followups/{followup}', [StudentInterventionFollowupController::class, 'destroy'])
         ->name('students.followups.destroy');
 
-    Route::resource('graduation-requirement-templates', GraduationRequirementTemplateController::class)->except(['show']);
+    Route::resource('graduation-requirement-templates', GraduationRequirementTemplateController::class)->except(['show', 'create']);
 
-    Route::resource('competency-categories', CompetencyCategoryController::class)->except(['show']);
+    Route::resource('competency-categories', CompetencyCategoryController::class)->except(['show', 'create']);
     Route::post('competency-categories/{competencyCategory}/indicators', [CompetencyIndicatorController::class, 'store'])
         ->name('competency-categories.indicators.store');
     Route::put('competency-categories/{competencyCategory}/indicators/{indicator}', [CompetencyIndicatorController::class, 'update'])
@@ -185,7 +185,7 @@ Route::middleware('auth')->group(function () {
     Route::get('graduation-candidates/report/batch', [GraduationReportController::class, 'batch'])
         ->name('graduation-candidates.report.batch');
 
-    Route::resource('graduation-candidates', GraduationCandidateController::class)->only(['index', 'create', 'store', 'show', 'destroy']);
+    Route::resource('graduation-candidates', GraduationCandidateController::class)->only(['index', 'store', 'show', 'destroy']);
     Route::put('graduation-candidates/{graduationCandidate}/requirements/{requirement}', [StudentGraduationRequirementController::class, 'update'])
         ->name('graduation-candidates.requirements.update');
     Route::post('graduation-candidates/{graduationCandidate}/evaluators', [CompetencyEvaluatorController::class, 'store'])
@@ -232,20 +232,20 @@ Route::middleware('auth')->group(function () {
     Route::get('faculty-workload/{user}', [FacultyWorkloadController::class, 'show'])->name('faculty-workload.show');
 
     Route::delete('announcements/bulk-destroy', [AnnouncementController::class, 'destroyMany'])->name('announcements.destroyMany');
-    Route::resource('announcements', AnnouncementController::class)->except(['show']);
+    Route::resource('announcements', AnnouncementController::class)->except(['show', 'create']);
     Route::delete('events/bulk-destroy', [EventController::class, 'destroyMany'])->name('events.destroyMany');
-    Route::resource('events', EventController::class)->except(['show']);
-    Route::resource('facilities', FacilityController::class)->except(['show']);
+    Route::resource('events', EventController::class)->except(['show', 'create']);
+    Route::resource('facilities', FacilityController::class)->except(['show', 'create']);
 
     Route::get('equipment/accountability', [EquipmentAccountabilityController::class, 'index'])->name('equipment.accountability');
-    Route::resource('equipment', EquipmentController::class);
+    Route::resource('equipment', EquipmentController::class)->except(['create']);
     Route::post('equipment/{equipment}/borrowings', [EquipmentBorrowingController::class, 'store'])->name('equipment.borrowings.store');
     Route::post('equipment/{equipment}/borrowings/{borrowing}/return', [EquipmentReturnController::class, 'store'])->name('equipment.borrowings.return');
     Route::post('equipment/{equipment}/maintenance', [EquipmentMaintenanceController::class, 'store'])->name('equipment.maintenance.store');
     Route::patch('equipment/{equipment}/maintenance/{maintenance}/complete', [EquipmentMaintenanceController::class, 'complete'])->name('equipment.maintenance.complete');
 
     Route::delete('meetings/bulk-destroy', [MeetingController::class, 'destroyMany'])->name('meetings.destroyMany');
-    Route::resource('meetings', MeetingController::class);
+    Route::resource('meetings', MeetingController::class)->except(['create']);
     Route::post('meetings/{meeting}/attendees', [MeetingAttendeeController::class, 'store'])->name('meetings.attendees.store');
     Route::patch('meetings/{meeting}/attendees/{attendee}', [MeetingAttendeeController::class, 'update'])->name('meetings.attendees.update');
     Route::delete('meetings/{meeting}/attendees/{attendee}', [MeetingAttendeeController::class, 'destroy'])->name('meetings.attendees.destroy');
@@ -254,16 +254,16 @@ Route::middleware('auth')->group(function () {
     Route::delete('meetings/{meeting}/action-items/{actionItem}', [MeetingActionItemController::class, 'destroy'])->name('meetings.action-items.destroy');
 
     Route::delete('tasks/bulk-destroy', [TaskController::class, 'destroyMany'])->name('tasks.destroyMany');
-    Route::resource('tasks', TaskController::class)->except(['show']);
+    Route::resource('tasks', TaskController::class)->except(['show', 'create']);
 
-    Route::resource('internal-requests', InternalRequestController::class)->only(['index', 'create', 'store']);
+    Route::resource('internal-requests', InternalRequestController::class)->only(['index', 'store']);
     Route::patch('internal-requests/{internalRequest}/review', [InternalRequestController::class, 'review'])->name('internal-requests.review');
     Route::patch('internal-requests/{internalRequest}/cancel', [InternalRequestController::class, 'cancel'])->name('internal-requests.cancel');
 
     Route::resource('document-categories', DocumentCategoryController::class)->only(['index', 'store', 'destroy']);
 
     Route::delete('documents/bulk-destroy', [DocumentController::class, 'destroyMany'])->name('documents.destroyMany');
-    Route::resource('documents', DocumentController::class);
+    Route::resource('documents', DocumentController::class)->except(['create']);
     Route::post('documents/{document}/versions', [DocumentVersionController::class, 'store'])->name('documents.versions.store');
     Route::get('documents/{document}/versions/{version}/download', [DocumentVersionController::class, 'download'])->name('documents.versions.download');
     Route::delete('documents/{document}/versions/{version}', [DocumentVersionController::class, 'destroy'])->name('documents.versions.destroy');
@@ -273,6 +273,7 @@ Route::middleware('auth')->group(function () {
     Route::post('notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
 
     Route::resource('research-projects', ResearchProjectController::class)
+        ->except(['create'])
         ->parameters(['research-projects' => 'researchProject']);
     Route::post('research-projects/{researchProject}/members', [ResearchMemberController::class, 'store'])->name('research-projects.members.store');
     Route::delete('research-projects/{researchProject}/members/{member}', [ResearchMemberController::class, 'destroy'])->name('research-projects.members.destroy');
@@ -280,6 +281,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('research-projects/{researchProject}/outputs/{output}', [ResearchOutputController::class, 'destroy'])->name('research-projects.outputs.destroy');
 
     Route::resource('extension-projects', ExtensionProjectController::class)
+        ->except(['create'])
         ->parameters(['extension-projects' => 'extensionProject']);
     Route::post('extension-projects/{extensionProject}/members', [ExtensionMemberController::class, 'store'])->name('extension-projects.members.store');
     Route::delete('extension-projects/{extensionProject}/members/{member}', [ExtensionMemberController::class, 'destroy'])->name('extension-projects.members.destroy');
@@ -289,7 +291,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('extension-projects/{extensionProject}/beneficiaries/{beneficiary}', [ExtensionBeneficiaryController::class, 'destroy'])->name('extension-projects.beneficiaries.destroy');
 
     Route::middleware('permission:users.manage')->group(function () {
-        Route::resource('users', UserController::class)->except(['show']);
+        Route::resource('users', UserController::class)->except(['show', 'create']);
         Route::patch('users/{user}/reactivate', [UserController::class, 'reactivate'])->name('users.reactivate');
     });
 

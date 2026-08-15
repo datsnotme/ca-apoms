@@ -75,7 +75,7 @@ export default function UpdateProfilePhotoForm({
         <section>
             <header>
                 <h2 className="text-lg font-medium text-slate-900">Profile Photo</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-900">
                     JPG or PNG, up to 2 MB. You'll be able to crop and zoom before it's saved.
                     Visible to anyone who can see your name elsewhere in the system.
                 </p>

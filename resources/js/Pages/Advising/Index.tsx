@@ -32,7 +32,7 @@ export default function Index({ students, canManage }: { students: Paginated<Adv
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Student No.</th>
                                     <th className="px-5 py-2.5">Name</th>

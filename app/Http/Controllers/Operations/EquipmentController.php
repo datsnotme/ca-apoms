@@ -38,18 +38,14 @@ class EquipmentController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', Equipment::class);
+
         return Inertia::render('Equipment/Index', [
             'equipment' => $equipment,
-            'canCreate' => $user->can('create', Equipment::class),
+            'canCreate' => $canCreate,
             'filters' => ['status' => $request->string('status')->toString()],
+            ...($canCreate ? $this->formOptions($request) : []),
         ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Equipment::class);
-
-        return Inertia::render('Equipment/Create', $this->formOptions($request));
     }
 
     public function store(EquipmentRequest $request): RedirectResponse

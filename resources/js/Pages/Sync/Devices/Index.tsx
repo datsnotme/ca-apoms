@@ -101,7 +101,7 @@ export default function Index({
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                     <tr>
                                         <th className="px-3 py-2">Name</th>
                                         <th className="px-3 py-2">Code</th>
@@ -128,10 +128,10 @@ export default function Index({
                                                 {device.owner ? (
                                                     <span title={device.owner.email}>{device.owner.name}</span>
                                                 ) : (
-                                                    <span className="text-slate-400">—</span>
+                                                    <span className="text-slate-900">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-3 py-2 text-slate-500">{device.role_hint ?? '—'}</td>
+                                            <td className="px-3 py-2 text-slate-900">{device.role_hint ?? '—'}</td>
                                             <td className="px-3 py-2">
                                                 <Badge variant={device.status === 'active' ? 'success' : device.status === 'revoked' ? 'danger' : 'neutral'}>
                                                     {device.status}
@@ -197,7 +197,7 @@ export default function Index({
             <Modal show={revokeTarget !== null} onClose={() => setRevokeTarget(null)} maxWidth="md">
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-slate-900">Revoke this device?</h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-900">
                         <span className="font-medium">{revokeTarget?.name}</span>&apos;s token will stop working immediately —
                         it can no longer call the sync API. The device record and its sync history are kept.
                     </p>
@@ -211,7 +211,7 @@ export default function Index({
             <Modal show={reissueTarget !== null} onClose={() => setReissueTarget(null)} maxWidth="md">
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-slate-900">Issue a new token?</h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-900">
                         <span className="font-medium">{reissueTarget?.name}</span>&apos;s current token will stop working, and
                         a new one will be shown once. Use this if the old token was lost or compromised.
                     </p>
@@ -257,7 +257,7 @@ function RegisterDeviceModal({
         <Modal show={show} onClose={onClose} maxWidth="md">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Register Device</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-900">
                     Issues a Sanctum token scoped to the sync API only — it can never do more than the Admin it
                     authenticates as.
                 </p>
@@ -398,7 +398,7 @@ function TokenRevealModal({ token, onClose }: { token: string | null; onClose: (
         <Modal show={token !== null} onClose={onClose} maxWidth="lg">
             <div className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Device Token</h2>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-slate-900">
                     Copy this token now — it won&apos;t be shown again. Paste it into the other instance&apos;s
                     Sync Center as this remote&apos;s token.
                 </p>

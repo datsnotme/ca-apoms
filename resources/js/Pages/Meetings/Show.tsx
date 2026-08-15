@@ -92,7 +92,7 @@ export default function Show({
                     <CardContent>
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge variant={meeting.department ? 'info' : 'neutral'}>{meeting.department?.name ?? 'Entire College'}</Badge>
-                            <span className="text-xs text-slate-400">Organized by {meeting.created_by?.name ?? 'Unknown'}</span>
+                            <span className="text-xs text-slate-900">Organized by {meeting.created_by?.name ?? 'Unknown'}</span>
                         </div>
                         {meeting.description && <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{meeting.description}</p>}
                     </CardContent>

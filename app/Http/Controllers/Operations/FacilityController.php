@@ -32,19 +32,15 @@ class FacilityController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', Facility::class);
+
         return Inertia::render('Facilities/Index', [
             'facilities' => $facilities,
-            'canCreate' => $user->can('create', Facility::class),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Facility::class);
-
-        return Inertia::render('Facilities/Create', [
-            'departments' => $this->departmentOptions($request),
-            'isAdmin' => $request->user()->hasRole(RoleName::Administrator->value),
+            'canCreate' => $canCreate,
+            ...($canCreate ? [
+                'departments' => $this->departmentOptions($request),
+                'isAdmin' => $user->hasRole(RoleName::Administrator->value),
+            ] : []),
         ]);
     }
 

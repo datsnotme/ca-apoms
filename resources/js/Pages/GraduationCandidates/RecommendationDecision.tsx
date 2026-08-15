@@ -134,13 +134,13 @@ export default function RecommendationDecision({
                                 readyForRecommendation ? (
                                     <RecommendForm candidateId={candidate.id} />
                                 ) : (
-                                    <p className="text-sm text-slate-500">
+                                    <p className="text-sm text-slate-900">
                                         Waiting on the requirement checklist and/or competency evaluation to be completed before
                                         this candidate can be recommended.
                                     </p>
                                 )
                             ) : (
-                                <p className="text-sm text-slate-500">Awaiting department recommendation.</p>
+                                <p className="text-sm text-slate-900">Awaiting department recommendation.</p>
                             )}
                         </div>
                     )}
@@ -152,7 +152,7 @@ export default function RecommendationDecision({
                                 <p className="text-sm text-slate-600">
                                     Recommended by {candidate.recommended_by.name} on {candidate.recommended_at?.slice(0, 10)}
                                     {candidate.recommendation_remarks && (
-                                        <span className="block text-xs text-slate-400">"{candidate.recommendation_remarks}"</span>
+                                        <span className="block text-xs text-slate-900">"{candidate.recommendation_remarks}"</span>
                                     )}
                                 </p>
                             ) : (
@@ -166,7 +166,7 @@ export default function RecommendationDecision({
                             {canDecide ? (
                                 <DecisionForm candidateId={candidate.id} />
                             ) : (
-                                <p className="text-sm text-slate-500">Awaiting the Dean's decision.</p>
+                                <p className="text-sm text-slate-900">Awaiting the Dean's decision.</p>
                             )}
                         </div>
                     )}
@@ -180,7 +180,7 @@ export default function RecommendationDecision({
                                 <Badge variant={STATUS_VARIANT[decisionLabel] ?? 'neutral'}>{decisionLabel}</Badge>{' '}
                                 by {candidate.decided_by.name} on {candidate.decided_at?.slice(0, 10)}
                                 {candidate.decision_remarks && (
-                                    <span className="block text-xs text-slate-400">"{candidate.decision_remarks}"</span>
+                                    <span className="block text-xs text-slate-900">"{candidate.decision_remarks}"</span>
                                 )}
                             </p>
                         </div>

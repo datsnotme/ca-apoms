@@ -36,7 +36,7 @@ export default function Accountability({ outstanding }: { outstanding: Outstandi
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Equipment</th>
                                     <th className="px-5 py-2.5">Accountable To</th>
@@ -54,7 +54,7 @@ export default function Accountability({ outstanding }: { outstanding: Outstandi
                                             >
                                                 {row.equipment.name}
                                             </Link>
-                                            <div className="text-xs text-slate-400">
+                                            <div className="text-xs text-slate-900">
                                                 {row.equipment.type} · {row.equipment.department?.name ?? 'Shared / College-wide'}
                                             </div>
                                         </td>

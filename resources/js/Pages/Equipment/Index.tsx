@@ -1,11 +1,14 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
 import EmptyState from '@/Components/ui/EmptyState';
 import Pagination from '@/Components/ui/Pagination';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 import { Paginated } from '@/types';
+import EquipmentForm from './Form';
 
 type Status = 'available' | 'borrowed' | 'under_maintenance' | 'retired';
 
@@ -31,11 +34,21 @@ export default function Index({
     equipment,
     canCreate,
     filters,
+    departments,
+    facilities,
+    statuses,
+    isAdmin,
 }: {
     equipment: Paginated<EquipmentRow>;
     canCreate: boolean;
     filters: { status: string };
+    departments?: { id: number; name: string }[];
+    facilities?: { id: number; name: string }[];
+    statuses?: { value: string; label: string }[];
+    isAdmin?: boolean;
 }) {
+    const [showCreate, setShowCreate] = useState(false);
+
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Equipment</h1>}>
             <Head title="Equipment" />
@@ -50,9 +63,7 @@ export default function Index({
                                 Accountability Report
                             </Link>
                             {canCreate && (
-                                <Link href={route('equipment.create')}>
-                                    <PrimaryButton>Register Equipment</PrimaryButton>
-                                </Link>
+                                <PrimaryButton onClick={() => setShowCreate(true)}>Register Equipment</PrimaryButton>
                             )}
                         </div>
                     }
@@ -101,6 +112,29 @@ export default function Index({
 
                 <Pagination links={equipment.links} from={equipment.from} to={equipment.to} total={equipment.total} />
             </Card>
+
+            {canCreate && departments && facilities && statuses && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Register Equipment</h2>
+                        <div className="mt-4">
+                            <EquipmentForm
+                                action={route('equipment.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                facilities={facilities}
+                                statuses={statuses}
+                                isAdmin={Boolean(isAdmin)}
+                                showStatus={false}
+                                submitLabel="Register Equipment"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

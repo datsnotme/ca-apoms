@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
@@ -8,8 +9,10 @@ import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated } from '@/types';
+import EventForm from './Form';
 
 interface EventRow {
     id: number;
@@ -37,13 +40,18 @@ export default function Index({
     events,
     canCreate,
     filters,
+    departments,
+    isAdmin,
 }: {
     events: Paginated<EventRow>;
     canCreate: boolean;
     filters: { include_past: boolean };
+    departments?: { id: number; name: string }[];
+    isAdmin?: boolean;
 }) {
     const manageableIds = events.data.filter((e) => e.can_manage).map((e) => e.id);
     const bulk = useBulkSelection(manageableIds);
+    const [showCreate, setShowCreate] = useState(false);
 
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Events</h1>}>
@@ -55,9 +63,7 @@ export default function Index({
                     description="College-wide and department calendar."
                     actions={
                         canCreate ? (
-                            <Link href={route('events.create')}>
-                                <PrimaryButton>Add Event</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Add Event</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -106,7 +112,7 @@ export default function Index({
                                             {event.location ? ` · ${event.location}` : ''}
                                         </p>
                                         {event.description && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{event.description}</p>}
-                                        <p className="mt-2 text-xs text-slate-400">Posted by {event.created_by?.name ?? 'Unknown'}</p>
+                                        <p className="mt-2 text-xs text-slate-900">Posted by {event.created_by?.name ?? 'Unknown'}</p>
                                     </div>
                                 </div>
                                 {event.can_manage && (
@@ -124,6 +130,26 @@ export default function Index({
 
                 <Pagination links={events.links} from={events.from} to={events.to} total={events.total} />
             </Card>
+
+            {canCreate && departments && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Add Event</h2>
+                        <div className="mt-4">
+                            <EventForm
+                                action={route('events.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                isAdmin={Boolean(isAdmin)}
+                                submitLabel="Add Event"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

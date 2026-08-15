@@ -34,20 +34,16 @@ class EventController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', Event::class);
+
         return Inertia::render('Events/Index', [
             'events' => $events,
-            'canCreate' => $user->can('create', Event::class),
+            'canCreate' => $canCreate,
             'filters' => ['include_past' => $request->boolean('include_past')],
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Event::class);
-
-        return Inertia::render('Events/Create', [
-            'departments' => $this->departmentOptions($request),
-            'isAdmin' => $request->user()->hasRole(RoleName::Administrator->value),
+            ...($canCreate ? [
+                'departments' => $this->departmentOptions($request),
+                'isAdmin' => $user->hasRole(RoleName::Administrator->value),
+            ] : []),
         ]);
     }
 

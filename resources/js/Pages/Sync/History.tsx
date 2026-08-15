@@ -42,7 +42,7 @@ export default function History({ runs }: { runs: Paginated<Run> }) {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">When</th>
                                     <th className="px-5 py-2.5">Device</th>
@@ -58,7 +58,7 @@ export default function History({ runs }: { runs: Paginated<Run> }) {
                             <tbody className="divide-y divide-slate-100">
                                 {runs.data.map((run) => (
                                     <tr key={run.id} className="hover:bg-slate-50">
-                                        <td className="px-5 py-2.5 whitespace-nowrap text-slate-500">
+                                        <td className="px-5 py-2.5 whitespace-nowrap text-slate-900">
                                             {new Date(run.started_at).toLocaleString()}
                                         </td>
                                         <td className="px-5 py-2.5">{run.device?.name ?? '—'}</td>

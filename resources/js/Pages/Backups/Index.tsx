@@ -63,7 +63,7 @@ export default function Index({ backups }: { backups: Backup[] }) {
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">Filename</th>
                                             <th className="px-3 py-2">Size</th>
@@ -107,7 +107,7 @@ export default function Index({ backups }: { backups: Backup[] }) {
             <Modal show={restoreTarget !== null} onClose={() => setRestoreTarget(null)} maxWidth="md">
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-slate-900">Restore database from this backup?</h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-900">
                         This replaces every row currently in the database with the contents of{' '}
                         <span className="font-mono">{restoreTarget?.filename}</span>. Any data recorded after this
                         backup was taken will be permanently lost. This cannot be undone.

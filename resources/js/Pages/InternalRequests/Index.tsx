@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { FormEventHandler, useState } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
@@ -8,6 +8,9 @@ import Pagination from '@/Components/ui/Pagination';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
+import Modal from '@/Components/Modal';
 import { Paginated } from '@/types';
 
 type Status = 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -74,6 +77,8 @@ export default function Index({
     statuses: { value: string; label: string }[];
     filters: { status: string };
 }) {
+    const [showCreate, setShowCreate] = useState(false);
+
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Internal Requests</h1>}>
             <Head title="Internal Requests" />
@@ -82,11 +87,7 @@ export default function Index({
                 <CardHeader
                     title="Internal Requests"
                     description="Requests submitted for department or college approval."
-                    actions={
-                        <Link href={route('internal-requests.create')}>
-                            <PrimaryButton>Submit Request</PrimaryButton>
-                        </Link>
-                    }
+                    actions={<PrimaryButton onClick={() => setShowCreate(true)}>Submit Request</PrimaryButton>}
                 />
 
                 <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
@@ -117,11 +118,11 @@ export default function Index({
                                         <Badge variant={STATUS_VARIANT[req.status]}>{req.status}</Badge>
                                     </div>
                                     <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{req.description}</p>
-                                    <p className="mt-2 text-xs text-slate-400">
+                                    <p className="mt-2 text-xs text-slate-900">
                                         {req.requester?.name ?? 'Unknown'} · {req.department?.name ?? '—'} · {req.created_at.slice(0, 10)}
                                     </p>
-                                    {req.remarks && <p className="mt-1 text-xs text-slate-500">Remarks: {req.remarks}</p>}
-                                    {req.reviewed_by && <p className="text-xs text-slate-400">Reviewed by {req.reviewed_by.name}</p>}
+                                    {req.remarks && <p className="mt-1 text-xs text-slate-900">Remarks: {req.remarks}</p>}
+                                    {req.reviewed_by && <p className="text-xs text-slate-900">Reviewed by {req.reviewed_by.name}</p>}
                                     {req.can_review && <ReviewControls request={req} />}
                                 </div>
                                 {req.can_cancel && (
@@ -147,6 +148,81 @@ export default function Index({
 
                 <Pagination links={requests.links} from={requests.from} to={requests.to} total={requests.total} />
             </Card>
+
+            <SubmitRequestModal show={showCreate} onClose={() => setShowCreate(false)} />
         </AppLayout>
+    );
+}
+
+function SubmitRequestModal({ show, onClose }: { show: boolean; onClose: () => void }) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        type: '',
+        title: '',
+        description: '',
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(route('internal-requests.store'), {
+            onSuccess: () => {
+                reset();
+                onClose();
+            },
+        });
+    };
+
+    return (
+        <Modal show={show} onClose={onClose} maxWidth="lg">
+            <div className="p-6">
+                <h2 className="text-lg font-medium text-slate-900">New Internal Request</h2>
+                <p className="mt-1 text-sm text-slate-600">Submitted to your Department Head (or an Admin) for review.</p>
+                <form onSubmit={submit} className="mt-4 flex flex-col gap-4">
+                    <div>
+                        <InputLabel htmlFor="type" value="Type" />
+                        <TextInput
+                            id="type"
+                            className="mt-1 block w-full"
+                            placeholder="e.g. Leave, Resource, Equipment"
+                            value={data.type}
+                            onChange={(e) => setData('type', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.type} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="title" value="Title" />
+                        <TextInput
+                            id="title"
+                            className="mt-1 block w-full"
+                            value={data.title}
+                            onChange={(e) => setData('title', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.title} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="description" value="Description" />
+                        <textarea
+                            id="description"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                            rows={5}
+                            value={data.description}
+                            onChange={(e) => setData('description', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.description} className="mt-2" />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <PrimaryButton disabled={processing}>Submit Request</PrimaryButton>
+                        <SecondaryButton type="button" onClick={onClose}>
+                            Cancel
+                        </SecondaryButton>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     );
 }

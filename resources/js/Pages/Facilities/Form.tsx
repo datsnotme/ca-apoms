@@ -24,6 +24,8 @@ export default function FacilityForm({
     isAdmin,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -31,9 +33,11 @@ export default function FacilityForm({
     departments: { id: number; name: string }[];
     isAdmin: boolean;
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<FacilityFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<FacilityFormValues>({
         name: initialValues.name ?? '',
         type: initialValues.type ?? '',
         department_id: initialValues.department_id ?? '',
@@ -46,7 +50,14 @@ export default function FacilityForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -95,7 +106,7 @@ export default function FacilityForm({
                     <InputError message={errors.department_id} className="mt-2" />
                 </div>
             ) : (
-                <p className="self-end text-sm text-slate-500">This facility belongs to your own department.</p>
+                <p className="self-end text-sm text-slate-900">This facility belongs to your own department.</p>
             )}
 
             <div>
@@ -149,7 +160,10 @@ export default function FacilityForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

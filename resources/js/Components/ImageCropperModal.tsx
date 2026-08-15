@@ -140,7 +140,7 @@ export default function ImageCropperModal({
         <Modal show={show} onClose={onCancel} maxWidth="sm">
             <div className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Adjust Photo</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-900">
                     Drag to reposition, and use the slider to zoom in or out.
                 </p>
 
@@ -181,7 +181,7 @@ export default function ImageCropperModal({
                 </div>
 
                 <div className="mt-4 flex items-center gap-3">
-                    <label htmlFor="crop-zoom" className="text-sm text-slate-500">
+                    <label htmlFor="crop-zoom" className="text-sm text-slate-900">
                         Zoom
                     </label>
                     <input

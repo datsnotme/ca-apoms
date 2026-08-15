@@ -7,14 +7,17 @@ use App\Http\Requests\Graduation\GraduationRequirementTemplateRequest;
 use App\Models\GraduationRequirementTemplate;
 use App\Models\Program;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class GraduationRequirementTemplateController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $this->authorize('viewAny', GraduationRequirementTemplate::class);
+
+        $canManage = $request->user()->can('create', GraduationRequirementTemplate::class);
 
         return Inertia::render('GraduationRequirements/Index', [
             'templates' => GraduationRequirementTemplate::query()
@@ -22,15 +25,9 @@ class GraduationRequirementTemplateController extends Controller
                 ->orderBy('sort_order')
                 ->orderBy('title')
                 ->get(),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        $this->authorize('create', GraduationRequirementTemplate::class);
-
-        return Inertia::render('GraduationRequirements/Create', [
-            'programs' => Program::query()->orderBy('name')->get(['id', 'name']),
+            ...($canManage ? [
+                'programs' => Program::query()->orderBy('name')->get(['id', 'name']),
+            ] : []),
         ]);
     }
 

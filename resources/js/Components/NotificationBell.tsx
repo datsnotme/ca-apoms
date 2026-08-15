@@ -30,7 +30,7 @@ export default function NotificationBell({ unreadCount, recent }: { unreadCount:
             <Dropdown.Trigger>
                 <button
                     type="button"
-                    className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-full text-slate-900 hover:bg-slate-100"
                     aria-label="Notifications"
                 >
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,7 +63,7 @@ export default function NotificationBell({ unreadCount, recent }: { unreadCount:
                 </div>
 
                 {recent.length === 0 ? (
-                    <p className="px-4 py-6 text-center text-sm text-slate-500">No notifications yet.</p>
+                    <p className="px-4 py-6 text-center text-sm text-slate-900">No notifications yet.</p>
                 ) : (
                     <div className="max-h-96 overflow-y-auto">
                         {recent.map((n) => (
@@ -77,7 +77,7 @@ export default function NotificationBell({ unreadCount, recent }: { unreadCount:
                             >
                                 <p className="font-medium text-slate-900">{n.title}</p>
                                 <p className="mt-0.5 text-xs text-slate-600">{n.message}</p>
-                                <p className="mt-1 text-[11px] text-slate-400">{timeAgo(n.created_at)}</p>
+                                <p className="mt-1 text-[11px] text-slate-900">{timeAgo(n.created_at)}</p>
                             </button>
                         ))}
                     </div>

@@ -48,11 +48,11 @@ export default function BeneficiaryList({
     return (
         <div className="flex flex-col gap-4">
             {beneficiaries.length === 0 ? (
-                <p className="text-sm text-slate-500">No beneficiaries recorded yet.</p>
+                <p className="text-sm text-slate-900">No beneficiaries recorded yet.</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Name</th>
                                 <th className="px-3 py-2">Type</th>
@@ -66,7 +66,7 @@ export default function BeneficiaryList({
                                 <tr key={beneficiary.id}>
                                     <td className="px-3 py-2">
                                         {beneficiary.beneficiary_name}
-                                        {beneficiary.notes && <div className="text-xs text-slate-400">{beneficiary.notes}</div>}
+                                        {beneficiary.notes && <div className="text-xs text-slate-900">{beneficiary.notes}</div>}
                                     </td>
                                     <td className="px-3 py-2">{beneficiary.beneficiary_type}</td>
                                     <td className="px-3 py-2">{beneficiary.count ?? '—'}</td>

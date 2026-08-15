@@ -33,15 +33,9 @@ class DepartmentController extends Controller
         return Inertia::render('Departments/Index', [
             'departments' => $departments,
             'filters' => $request->only('search'),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        $this->authorize('create', Department::class);
-
-        return Inertia::render('Departments/Create', [
-            'potentialHeads' => User::query()->orderBy('surname')->get(['id', 'name']),
+            ...($request->user()->can('create', Department::class) ? [
+                'potentialHeads' => User::query()->orderBy('surname')->get(['id', 'name']),
+            ] : []),
         ]);
     }
 

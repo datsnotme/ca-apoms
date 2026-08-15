@@ -35,18 +35,12 @@ class CurriculumController extends Controller
         return Inertia::render('Curricula/Index', [
             'curricula' => $curricula,
             'filters' => $request->only('search'),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Curriculum::class);
-
-        return Inertia::render('Curricula/Create', [
-            'programs' => Program::query()
-                ->whereHas('department', fn ($q) => $q->visibleTo($request->user()))
-                ->orderBy('name')->get(['id', 'name']),
-            'academicYears' => AcademicYear::query()->orderByDesc('start_year')->get(['id', 'start_year', 'end_year']),
+            ...($request->user()->can('create', Curriculum::class) ? [
+                'programs' => Program::query()
+                    ->whereHas('department', fn ($q) => $q->visibleTo($request->user()))
+                    ->orderBy('name')->get(['id', 'name']),
+                'academicYears' => AcademicYear::query()->orderByDesc('start_year')->get(['id', 'start_year', 'end_year']),
+            ] : []),
         ]);
     }
 

@@ -38,7 +38,9 @@ test('program codes must be unique', function () {
 test('a department head cannot manage programs', function () {
     $head = userWithRole(RoleName::DepartmentHead->value, $this->department);
 
-    $this->actingAs($head)->get('/programs/create')->assertForbidden();
+    $this->actingAs($head)->get('/programs')->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('departments'));
+    $this->actingAs($head)->post('/programs', ['name' => 'New Program'])->assertForbidden();
 });
 
 test('an admin can bulk archive multiple programs at once', function () {

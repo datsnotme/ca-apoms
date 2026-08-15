@@ -34,8 +34,8 @@ test('a department head only sees their own department', function () {
 test('a faculty member can view but not manage departments', function () {
     $faculty = userWithRole(RoleName::Faculty->value, $this->deptA);
 
-    $this->actingAs($faculty)->get('/departments')->assertOk();
-    $this->actingAs($faculty)->get('/departments/create')->assertForbidden();
+    $this->actingAs($faculty)->get('/departments')->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('potentialHeads'));
     $this->actingAs($faculty)->post('/departments', ['name' => 'New Dept'])->assertForbidden();
 });
 

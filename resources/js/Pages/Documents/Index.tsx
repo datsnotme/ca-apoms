@@ -1,5 +1,5 @@
 import { FormEventHandler, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
@@ -7,9 +7,13 @@ import EmptyState from '@/Components/ui/EmptyState';
 import Pagination from '@/Components/ui/Pagination';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
+import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated } from '@/types';
 
@@ -35,15 +39,20 @@ export default function Index({
     categories,
     canCreate,
     filters,
+    departments,
+    isAdmin,
 }: {
     documents: Paginated<DocumentRow>;
     categories: { id: number; name: string }[];
     canCreate: boolean;
     filters: { search?: string; document_category_id?: string };
+    departments?: { id: number; name: string }[];
+    isAdmin?: boolean;
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
     const manageableIds = documents.data.filter((d) => d.can_manage).map((d) => d.id);
     const bulk = useBulkSelection(manageableIds);
+    const [showCreate, setShowCreate] = useState(false);
 
     const submitSearch: FormEventHandler = (e) => {
         e.preventDefault();
@@ -60,9 +69,7 @@ export default function Index({
                     description="College-wide and department reference documents."
                     actions={
                         canCreate ? (
-                            <Link href={route('documents.create')}>
-                                <PrimaryButton>Upload Document</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Upload Document</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -105,7 +112,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="w-10 px-5 py-2.5">
                                         {manageableIds.length > 0 && (
@@ -149,7 +156,7 @@ export default function Index({
                                             {doc.latest_version ? (
                                                 <>
                                                     v{doc.latest_version.version_number} · {doc.latest_version.original_filename}
-                                                    <span className="ml-1 text-xs text-slate-400">
+                                                    <span className="ml-1 text-xs text-slate-900">
                                                         ({formatBytes(doc.latest_version.file_size)})
                                                     </span>
                                                 </>
@@ -172,6 +179,147 @@ export default function Index({
 
                 <Pagination links={documents.links} from={documents.from} to={documents.to} total={documents.total} />
             </Card>
+
+            {canCreate && (
+                <UploadDocumentModal
+                    show={showCreate}
+                    categories={categories}
+                    departments={departments ?? []}
+                    isAdmin={Boolean(isAdmin)}
+                    onClose={() => setShowCreate(false)}
+                />
+            )}
         </AppLayout>
+    );
+}
+
+function UploadDocumentModal({
+    show,
+    categories,
+    departments,
+    isAdmin,
+    onClose,
+}: {
+    show: boolean;
+    categories: { id: number; name: string }[];
+    departments: { id: number; name: string }[];
+    isAdmin: boolean;
+    onClose: () => void;
+}) {
+    const { data, setData, post, processing, errors, reset } = useForm<{
+        document_category_id: string;
+        title: string;
+        description: string;
+        department_id: string;
+        file: File | null;
+    }>({
+        document_category_id: categories[0]?.id ? String(categories[0].id) : '',
+        title: '',
+        description: '',
+        department_id: '',
+        file: null,
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(route('documents.store'), {
+            forceFormData: true,
+            onSuccess: () => {
+                reset();
+                onClose();
+            },
+        });
+    };
+
+    return (
+        <Modal show={show} onClose={onClose} maxWidth="2xl">
+            <div className="p-6">
+                <h2 className="text-lg font-medium text-slate-900">Upload Document</h2>
+                <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                        <InputLabel htmlFor="title" value="Title" />
+                        <TextInput
+                            id="title"
+                            className="mt-1 block w-full"
+                            value={data.title}
+                            onChange={(e) => setData('title', e.target.value)}
+                            required
+                        />
+                        <InputError message={errors.title} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel htmlFor="document_category_id" value="Category" />
+                        <select
+                            id="document_category_id"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                            value={data.document_category_id}
+                            onChange={(e) => setData('document_category_id', e.target.value)}
+                        >
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.name}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.document_category_id} className="mt-2" />
+                    </div>
+
+                    {isAdmin ? (
+                        <div>
+                            <InputLabel htmlFor="department_id" value="Audience" />
+                            <select
+                                id="department_id"
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                                value={data.department_id}
+                                onChange={(e) => setData('department_id', e.target.value)}
+                            >
+                                <option value="">Entire College</option>
+                                {departments.map((d) => (
+                                    <option key={d.id} value={d.id}>
+                                        {d.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <InputError message={errors.department_id} className="mt-2" />
+                        </div>
+                    ) : (
+                        <p className="self-end text-sm text-slate-900">This will be filed under your own department only.</p>
+                    )}
+
+                    <div className="sm:col-span-2">
+                        <InputLabel htmlFor="description" value="Description" />
+                        <textarea
+                            id="description"
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                            rows={3}
+                            value={data.description}
+                            onChange={(e) => setData('description', e.target.value)}
+                        />
+                        <InputError message={errors.description} className="mt-2" />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                        <InputLabel htmlFor="file" value="File" />
+                        <input
+                            id="file"
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                            className="mt-1 block w-full text-sm"
+                            onChange={(e) => setData('file', e.target.files?.[0] ?? null)}
+                            required
+                        />
+                        <InputError message={errors.file} className="mt-2" />
+                    </div>
+
+                    <div className="flex gap-3 sm:col-span-2">
+                        <PrimaryButton disabled={processing}>Upload Document</PrimaryButton>
+                        <SecondaryButton type="button" onClick={onClose}>
+                            Cancel
+                        </SecondaryButton>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     );
 }

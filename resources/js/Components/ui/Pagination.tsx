@@ -27,7 +27,7 @@ export default function Pagination({
 
     return (
         <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 px-5 py-3 sm:flex-row">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-900">
                 Showing {from} to {to} of {total} results
             </p>
             <nav aria-label="Pagination" className="flex flex-wrap gap-1">
@@ -44,7 +44,7 @@ export default function Pagination({
                                 ? 'bg-brand-700 text-white'
                                 : link.url
                                   ? 'text-slate-600 hover:bg-slate-100'
-                                  : 'cursor-default text-slate-300'
+                                  : 'cursor-default text-slate-900'
                         }`}
                         dangerouslySetInnerHTML={{ __html: link.label }}
                     />

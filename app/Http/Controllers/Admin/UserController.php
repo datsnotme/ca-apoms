@@ -38,16 +38,10 @@ class UserController extends Controller
             'users' => $users,
             'filters' => $request->only('search'),
             'showArchived' => $showArchived,
-        ]);
-    }
-
-    public function create(): Response
-    {
-        $this->authorize('create', User::class);
-
-        return Inertia::render('Users/Create', [
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
-            'roles' => $this->roleOptions(),
+            ...($request->user()->can('create', User::class) ? [
+                'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+                'roles' => $this->roleOptions(),
+            ] : []),
         ]);
     }
 

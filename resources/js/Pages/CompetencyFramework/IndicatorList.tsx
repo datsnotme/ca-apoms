@@ -94,11 +94,11 @@ export default function IndicatorList({
             )}
 
             {indicators.length === 0 ? (
-                <p className="text-sm text-slate-500">No indicators added to this category yet.</p>
+                <p className="text-sm text-slate-900">No indicators added to this category yet.</p>
             ) : (
                 <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Indicator</th>
                                 {canManage && <th className="px-3 py-2 text-right">Actions</th>}
@@ -109,7 +109,7 @@ export default function IndicatorList({
                                 <tr key={i.id}>
                                     <td className="px-3 py-2">
                                         {i.title}
-                                        {i.description && <p className="text-xs text-slate-400">{i.description}</p>}
+                                        {i.description && <p className="text-xs text-slate-900">{i.description}</p>}
                                     </td>
                                     {canManage && (
                                         <td className="px-3 py-2 text-right">

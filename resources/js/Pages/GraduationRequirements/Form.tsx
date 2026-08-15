@@ -21,6 +21,8 @@ export default function GraduationRequirementForm({
     programs,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -28,8 +30,10 @@ export default function GraduationRequirementForm({
     programs: { id: number; name: string }[];
     submitLabel: string;
     onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<TemplateFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<TemplateFormValues>({
         program_id: initialValues.program_id ?? '',
         title: initialValues.title ?? '',
         description: initialValues.description ?? '',
@@ -40,7 +44,14 @@ export default function GraduationRequirementForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -113,8 +124,13 @@ export default function GraduationRequirementForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                {onCancelHref && (
-                    <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                {(onCancel || onCancelHref) && (
+                    <SecondaryButton
+                        type="button"
+                        onClick={() =>
+                            onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref)
+                        }
+                    >
                         Cancel
                     </SecondaryButton>
                 )}

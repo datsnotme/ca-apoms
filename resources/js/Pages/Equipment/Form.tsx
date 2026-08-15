@@ -27,6 +27,8 @@ export default function EquipmentForm({
     showStatus,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -37,9 +39,11 @@ export default function EquipmentForm({
     isAdmin: boolean;
     showStatus: boolean;
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<EquipmentFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<EquipmentFormValues>({
         name: initialValues.name ?? '',
         type: initialValues.type ?? '',
         department_id: initialValues.department_id ?? '',
@@ -52,7 +56,14 @@ export default function EquipmentForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -101,7 +112,7 @@ export default function EquipmentForm({
                     <InputError message={errors.department_id} className="mt-2" />
                 </div>
             ) : (
-                <p className="self-end text-sm text-slate-500">This equipment belongs to your own department.</p>
+                <p className="self-end text-sm text-slate-900">This equipment belongs to your own department.</p>
             )}
 
             <div>
@@ -149,7 +160,7 @@ export default function EquipmentForm({
                         ))}
                     </select>
                     <InputError message={errors.status} className="mt-2" />
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-slate-900">
                         Normally set automatically by borrowing/return/maintenance actions — change this manually only to correct a mistake.
                     </p>
                 </div>
@@ -169,7 +180,10 @@ export default function EquipmentForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

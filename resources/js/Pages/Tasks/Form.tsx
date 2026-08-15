@@ -20,15 +20,19 @@ export default function TaskForm({
     assigneeOptions,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
     initialValues: Partial<TaskFormValues>;
     assigneeOptions: { id: number; name: string }[];
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<TaskFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<TaskFormValues>({
         title: initialValues.title ?? '',
         description: initialValues.description ?? '',
         assigned_to: initialValues.assigned_to ?? '',
@@ -38,7 +42,14 @@ export default function TaskForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -99,7 +110,10 @@ export default function TaskForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

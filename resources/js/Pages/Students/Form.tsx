@@ -82,7 +82,7 @@ function SectionHeading({ title, description }: { title: string; description?: s
     return (
         <div className="sm:col-span-2">
             <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
-            {description && <p className="mt-0.5 text-xs text-slate-500">{description}</p>}
+            {description && <p className="mt-0.5 text-xs text-slate-900">{description}</p>}
         </div>
     );
 }
@@ -100,7 +100,8 @@ export default function StudentForm({
     classifications,
     statuses,
     submitLabel,
-    onCancelHref,
+    onCancel,
+    onSuccess,
     showStatusReason,
 }: {
     action: string;
@@ -115,10 +116,11 @@ export default function StudentForm({
     classifications: { value: string; label: string }[];
     statuses: { value: string; label: string }[];
     submitLabel: string;
-    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
     showStatusReason?: boolean;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<StudentFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<StudentFormValues>({
         student_number: initialValues.student_number ?? '',
         surname: initialValues.surname ?? '',
         first_name: initialValues.first_name ?? '',
@@ -181,7 +183,14 @@ export default function StudentForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -544,8 +553,8 @@ export default function StudentForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                {onCancelHref && (
-                    <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                {onCancel && (
+                    <SecondaryButton type="button" onClick={onCancel}>
                         Cancel
                     </SecondaryButton>
                 )}

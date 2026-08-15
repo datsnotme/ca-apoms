@@ -298,11 +298,11 @@ export default function Show({
                     <CardHeader title="Borrowing History" />
                     <CardContent>
                         {equipment.borrowings.length === 0 ? (
-                            <p className="text-sm text-slate-500">No borrowing history yet.</p>
+                            <p className="text-sm text-slate-900">No borrowing history yet.</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">Borrower</th>
                                             <th className="px-3 py-2">Borrowed</th>
@@ -334,11 +334,11 @@ export default function Show({
                     <CardHeader title="Maintenance History" />
                     <CardContent>
                         {equipment.maintenance_records.length === 0 ? (
-                            <p className="text-sm text-slate-500">No maintenance history yet.</p>
+                            <p className="text-sm text-slate-900">No maintenance history yet.</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">Description</th>
                                             <th className="px-3 py-2">Started</th>

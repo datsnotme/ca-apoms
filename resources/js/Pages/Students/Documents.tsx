@@ -114,11 +114,11 @@ export default function Documents({
     return (
         <div className="flex flex-col gap-4">
             {documents.length === 0 ? (
-                <p className="text-sm text-slate-500">No documents uploaded yet.</p>
+                <p className="text-sm text-slate-900">No documents uploaded yet.</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-5 py-2.5">Category</th>
                                 <th className="px-5 py-2.5">Title</th>
@@ -140,21 +140,21 @@ export default function Documents({
                                         >
                                             {doc.original_filename}
                                         </a>
-                                        <span className="ml-1 text-xs text-slate-400">({formatBytes(doc.file_size)})</span>
+                                        <span className="ml-1 text-xs text-slate-900">({formatBytes(doc.file_size)})</span>
                                     </td>
                                     <td className="px-5 py-2.5">
                                         {doc.uploaded_at?.slice(0, 10)}
                                         {doc.uploaded_by && (
-                                            <div className="text-xs text-slate-400">by {doc.uploaded_by.name}</div>
+                                            <div className="text-xs text-slate-900">by {doc.uploaded_by.name}</div>
                                         )}
                                     </td>
                                     <td className="px-5 py-2.5">
                                         <Badge variant={STATUS_VARIANT[doc.verification_status]}>
                                             {doc.verification_status}
                                         </Badge>
-                                        {doc.remarks && <div className="mt-1 text-xs text-slate-400">{doc.remarks}</div>}
+                                        {doc.remarks && <div className="mt-1 text-xs text-slate-900">{doc.remarks}</div>}
                                         {doc.verified_by && (
-                                            <div className="text-xs text-slate-400">by {doc.verified_by.name}</div>
+                                            <div className="text-xs text-slate-900">by {doc.verified_by.name}</div>
                                         )}
                                         {canManage && <VerifyControls studentId={studentId} document={doc} />}
                                     </td>

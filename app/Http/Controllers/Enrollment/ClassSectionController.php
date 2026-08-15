@@ -42,14 +42,14 @@ class ClassSectionController extends Controller
             'classSections' => $classSections,
             'filters' => $request->only('search', 'semester_id'),
             'semesters' => $this->semesterOptions(),
+            ...($request->user()->can('create', ClassSection::class) ? [
+                'courses' => Course::query()->visibleTo($request->user())->orderBy('code')->get(['id', 'code', 'title']),
+                'faculty' => User::query()
+                    ->role([RoleName::Faculty->value, RoleName::DepartmentHead->value])
+                    ->orderBy('surname')->get(['id', 'name']),
+                'statuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], ClassSectionStatus::cases()),
+            ] : []),
         ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', ClassSection::class);
-
-        return Inertia::render('ClassSections/Create', $this->formOptions($request));
     }
 
     public function store(ClassSectionRequest $request): RedirectResponse

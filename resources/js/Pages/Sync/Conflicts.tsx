@@ -51,7 +51,7 @@ function ConflictDiff({ conflict }: { conflict: Conflict }) {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                     <tr>
                         <th className="px-3 py-2">Field</th>
                         <th className="px-3 py-2">Local</th>
@@ -135,11 +135,11 @@ export default function Conflicts({
                                     <div>
                                         <p className="text-sm font-medium text-slate-900">
                                             {conflict.entity_table}{' '}
-                                            <span className="font-mono text-xs font-normal text-slate-400">
+                                            <span className="font-mono text-xs font-normal text-slate-900">
                                                 {conflict.entity_uuid}
                                             </span>
                                         </p>
-                                        <p className="text-xs text-slate-500">
+                                        <p className="text-xs text-slate-900">
                                             Detected {new Date(conflict.created_at).toLocaleString()}
                                         </p>
                                     </div>
@@ -191,7 +191,7 @@ export default function Conflicts({
             <Modal show={takeRemoteTarget !== null} onClose={() => setTakeRemoteTarget(null)} maxWidth="md">
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-slate-900">Overwrite local with the remote's values?</h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-900">
                         This replaces this record's local field values ({takeRemoteTarget?.conflicting_fields.join(', ')})
                         with what the remote sent. Your local edits to those fields will be lost. This cannot be undone.
                     </p>

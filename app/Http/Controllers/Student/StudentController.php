@@ -57,21 +57,15 @@ class StudentController extends Controller
             'classifications' => array_map(fn ($c) => ['value' => $c->value, 'label' => $c->label()], StudentClassification::cases()),
             'statuses' => array_map(fn ($s) => ['value' => $s->value, 'label' => $s->label()], StudentStatus::cases()),
             'yearLevels' => YearLevel::query()->orderBy('level')->get(['id', 'label']),
+            ...($request->user()->can('create', Student::class) ? $this->formOptions($request) : []),
         ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Student::class);
-
-        return Inertia::render('Students/Create', $this->formOptions($request));
     }
 
     public function store(StudentRequest $request): RedirectResponse
     {
-        $student = $this->students->create($request->validated(), $request->user()->id);
+        $this->students->create($request->validated(), $request->user()->id);
 
-        return redirect()->route('students.edit', $student)->with('success', 'Student registered.');
+        return redirect()->route('students.index')->with('success', 'Student registered.');
     }
 
     public function edit(Request $request, Student $student): Response

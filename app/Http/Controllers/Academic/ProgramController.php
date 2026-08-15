@@ -32,15 +32,9 @@ class ProgramController extends Controller
         return Inertia::render('Programs/Index', [
             'programs' => $programs,
             'filters' => $request->only('search'),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Program::class);
-
-        return Inertia::render('Programs/Create', [
-            'departments' => Department::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
+            ...($request->user()->can('create', Program::class) ? [
+                'departments' => Department::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
+            ] : []),
         ]);
     }
 

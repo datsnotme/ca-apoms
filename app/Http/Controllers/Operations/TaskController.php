@@ -42,14 +42,6 @@ class TaskController extends Controller
             'tasks' => $tasks,
             'statuses' => collect(ActionItemStatus::cases())->map(fn ($case) => ['value' => $case->value, 'label' => $case->label()]),
             'filters' => ['status' => $request->string('status')->toString()],
-        ]);
-    }
-
-    public function create(): Response
-    {
-        $this->authorize('create', Task::class);
-
-        return Inertia::render('Tasks/Create', [
             'assigneeOptions' => User::query()->orderBy('surname')->get(['id', 'name']),
         ]);
     }

@@ -144,22 +144,22 @@ export default function Show({
                     <div className="grid grid-cols-2 gap-4 px-5 py-4 text-center sm:grid-cols-4">
                         <div>
                             <p className="text-2xl font-semibold text-slate-900">{student.year_level?.label ?? '—'}</p>
-                            <p className="text-xs uppercase text-slate-500">Year Level</p>
+                            <p className="text-xs uppercase text-slate-900">Year Level</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-brand-700">{completionPercentage}%</p>
-                            <p className="text-xs uppercase text-slate-500">Curriculum Complete</p>
+                            <p className="text-xs uppercase text-slate-900">Curriculum Complete</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-slate-900">{gwa ?? '—'}</p>
-                            <p className="text-xs uppercase text-slate-500">GWA</p>
+                            <p className="text-xs uppercase text-slate-900">GWA</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-red-600">{deficiencies.length}</p>
-                            <p className="text-xs uppercase text-slate-500">Deficiencies</p>
+                            <p className="text-xs uppercase text-slate-900">Deficiencies</p>
                         </div>
                     </div>
-                    <div className="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">
+                    <div className="border-t border-slate-200 px-5 py-3 text-sm text-slate-900">
                         Adviser: {student.adviser?.name ?? 'Unassigned'} · Department: {student.department?.name ?? '—'}
                     </div>
                 </Card>
@@ -177,7 +177,7 @@ export default function Show({
                                         <span className="text-sm text-slate-700">{a.message}</span>
                                     </div>
                                     {a.acknowledged_at ? (
-                                        <span className="text-xs text-slate-400">Acknowledged</span>
+                                        <span className="text-xs text-slate-900">Acknowledged</span>
                                     ) : (
                                         <button
                                             type="button"
@@ -198,7 +198,7 @@ export default function Show({
                         <CardHeader title="Active Deficiencies" description="Required courses whose expected year level has already passed." />
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                     <tr>
                                         <th className="px-5 py-2.5">Course</th>
                                         <th className="px-5 py-2.5">Type</th>
@@ -238,7 +238,7 @@ export default function Show({
                                         </h3>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-sm">
-                                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                                     <tr>
                                                         <th className="px-5 py-2.5">Course</th>
                                                         <th className="px-5 py-2.5">Units</th>

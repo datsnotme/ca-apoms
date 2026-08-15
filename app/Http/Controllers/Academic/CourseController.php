@@ -34,16 +34,10 @@ class CourseController extends Controller
         return Inertia::render('Courses/Index', [
             'courses' => $courses,
             'filters' => $request->only('search', 'category'),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Course::class);
-
-        return Inertia::render('Courses/Create', [
-            'departments' => Department::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
-            'courses' => Course::query()->orderBy('code')->get(['id', 'code', 'title']),
+            ...($request->user()->can('create', Course::class) ? [
+                'departments' => Department::query()->visibleTo($request->user())->orderBy('name')->get(['id', 'name']),
+                'allCourses' => Course::query()->orderBy('code')->get(['id', 'code', 'title']),
+            ] : []),
         ]);
     }
 

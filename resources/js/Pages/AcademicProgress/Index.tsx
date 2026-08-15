@@ -44,7 +44,7 @@ export default function Index({ students }: { students: Paginated<AtRiskStudentR
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Student No.</th>
                                     <th className="px-5 py-2.5">Name</th>
@@ -71,9 +71,9 @@ export default function Index({ students }: { students: Paginated<AtRiskStudentR
                                                         <Badge variant={a.severity === 'critical' ? 'danger' : 'warning'}>
                                                             {a.alert_type.replace(/_/g, ' ')}
                                                         </Badge>
-                                                        <span className="text-xs text-slate-500">{a.message}</span>
+                                                        <span className="text-xs text-slate-900">{a.message}</span>
                                                         {a.acknowledged_at ? (
-                                                            <span className="text-xs text-slate-400">Acknowledged</span>
+                                                            <span className="text-xs text-slate-900">Acknowledged</span>
                                                         ) : (
                                                             <button
                                                                 type="button"

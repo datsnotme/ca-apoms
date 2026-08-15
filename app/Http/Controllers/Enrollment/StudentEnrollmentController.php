@@ -39,16 +39,9 @@ class StudentEnrollmentController extends Controller
             'enrollments' => $enrollments,
             'filters' => $request->only('search', 'semester_id'),
             'semesters' => $this->semesterOptions(),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', StudentEnrollment::class);
-
-        return Inertia::render('Enrollments/Create', [
-            'students' => Student::query()->visibleTo($request->user())->orderBy('surname')->get(['id', 'student_number', 'surname', 'first_name', 'middle_name']),
-            'semesters' => $this->semesterOptions(),
+            ...($request->user()->can('create', StudentEnrollment::class) ? [
+                'students' => Student::query()->visibleTo($request->user())->orderBy('surname')->get(['id', 'student_number', 'surname', 'first_name', 'middle_name']),
+            ] : []),
         ]);
     }
 

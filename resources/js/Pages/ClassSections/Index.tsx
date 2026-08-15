@@ -8,7 +8,9 @@ import Pagination from '@/Components/ui/Pagination';
 import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import Modal from '@/Components/Modal';
 import { Paginated, PageProps } from '@/types';
+import ClassSectionForm from './Form';
 
 interface ClassSectionRow {
     id: number;
@@ -24,15 +26,22 @@ export default function Index({
     classSections,
     filters,
     semesters,
+    courses,
+    faculty,
+    statuses,
 }: {
     classSections: Paginated<ClassSectionRow>;
     filters: { search?: string; semester_id?: string };
     semesters: { id: number; label: string }[];
+    courses?: { id: number; code: string; title: string }[];
+    faculty?: { id: number; name: string }[];
+    statuses?: { value: string; label: string }[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const canManage = auth.user.permissions.includes('enrollment.manage');
     const [search, setSearch] = useState(filters.search ?? '');
     const [semesterId, setSemesterId] = useState(filters.semester_id ?? '');
+    const [showCreate, setShowCreate] = useState(false);
 
     const submitSearch: FormEventHandler = (e) => {
         e.preventDefault();
@@ -49,9 +58,7 @@ export default function Index({
                     description="Course offerings per semester, with faculty and schedule."
                     actions={
                         canManage ? (
-                            <Link href={route('class-sections.create')}>
-                                <PrimaryButton>Add Class Section</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Add Class Section</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -87,7 +94,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Course</th>
                                     <th className="px-5 py-2.5">Section</th>
@@ -150,6 +157,28 @@ export default function Index({
 
                 <Pagination links={classSections.links} from={classSections.from} to={classSections.to} total={classSections.total} />
             </Card>
+
+            {canManage && courses && faculty && statuses && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Add Class Section</h2>
+                        <div className="mt-4">
+                            <ClassSectionForm
+                                action={route('class-sections.store')}
+                                method="post"
+                                initialValues={{}}
+                                courses={courses}
+                                semesters={semesters}
+                                faculty={faculty}
+                                statuses={statuses}
+                                submitLabel="Add Class Section"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

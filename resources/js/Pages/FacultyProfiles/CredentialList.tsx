@@ -118,11 +118,11 @@ export default function CredentialList({
             )}
 
             {credentials.length === 0 ? (
-                <p className="text-sm text-slate-500">No credentials on file yet.</p>
+                <p className="text-sm text-slate-900">No credentials on file yet.</p>
             ) : (
                 <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Credential</th>
                                 <th className="px-3 py-2">Issued</th>
@@ -136,7 +136,7 @@ export default function CredentialList({
                                     <td className="px-3 py-2">
                                         {c.name}
                                         {(c.issuing_body || c.license_number) && (
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-900">
                                                 {c.issuing_body}
                                                 {c.issuing_body && c.license_number && ' · '}
                                                 {c.license_number}

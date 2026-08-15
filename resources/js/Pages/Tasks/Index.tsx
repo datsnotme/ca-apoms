@@ -9,8 +9,10 @@ import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated } from '@/types';
+import TaskForm from './Form';
 
 type Status = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 
@@ -64,13 +66,16 @@ export default function Index({
     tasks,
     statuses,
     filters,
+    assigneeOptions,
 }: {
     tasks: Paginated<TaskRow>;
     statuses: { value: string; label: string }[];
     filters: { status: string };
+    assigneeOptions: { id: number; name: string }[];
 }) {
     const manageableIds = tasks.data.filter((t) => t.can_manage).map((t) => t.id);
     const bulk = useBulkSelection(manageableIds);
+    const [showCreate, setShowCreate] = useState(false);
 
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Tasks</h1>}>
@@ -80,11 +85,7 @@ export default function Index({
                 <CardHeader
                     title="Tasks"
                     description="To-dos you created or were assigned."
-                    actions={
-                        <Link href={route('tasks.create')}>
-                            <PrimaryButton>Add Task</PrimaryButton>
-                        </Link>
-                    }
+                    actions={<PrimaryButton onClick={() => setShowCreate(true)}>Add Task</PrimaryButton>}
                 />
 
                 <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
@@ -114,7 +115,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="w-10 px-5 py-2.5">
                                         {manageableIds.length > 0 && (
@@ -171,6 +172,23 @@ export default function Index({
 
                 <Pagination links={tasks.links} from={tasks.from} to={tasks.to} total={tasks.total} />
             </Card>
+
+            <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-slate-900">Add Task</h2>
+                    <div className="mt-4">
+                        <TaskForm
+                            action={route('tasks.store')}
+                            method="post"
+                            initialValues={{}}
+                            assigneeOptions={assigneeOptions}
+                            submitLabel="Add Task"
+                            onCancel={() => setShowCreate(false)}
+                            onSuccess={() => setShowCreate(false)}
+                        />
+                    </div>
+                </div>
+            </Modal>
         </AppLayout>
     );
 }

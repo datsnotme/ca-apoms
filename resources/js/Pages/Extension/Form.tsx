@@ -26,6 +26,8 @@ export default function ExtensionProjectForm({
     showStatus,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -35,9 +37,11 @@ export default function ExtensionProjectForm({
     statuses: { value: string; label: string }[];
     showStatus: boolean;
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<ExtensionProjectFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<ExtensionProjectFormValues>({
         title: initialValues.title ?? '',
         description: initialValues.description ?? '',
         status: initialValues.status ?? 'proposed',
@@ -50,7 +54,14 @@ export default function ExtensionProjectForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -87,7 +98,7 @@ export default function ExtensionProjectForm({
                     <InputError message={errors.department_id} className="mt-2" />
                 </div>
             ) : (
-                <p className="self-end text-sm text-slate-500">This project belongs to your own department.</p>
+                <p className="self-end text-sm text-slate-900">This project belongs to your own department.</p>
             )}
 
             {showStatus && (
@@ -158,7 +169,10 @@ export default function ExtensionProjectForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

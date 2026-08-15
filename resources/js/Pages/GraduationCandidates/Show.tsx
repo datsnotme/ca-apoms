@@ -195,22 +195,22 @@ export default function Show({
                             <p className="text-2xl font-semibold text-slate-900">
                                 <Badge variant={STATUS_VARIANT[candidate.status] ?? 'neutral'}>{candidate.status.replace(/_/g, ' ')}</Badge>
                             </p>
-                            <p className="text-xs uppercase text-slate-500">Status</p>
+                            <p className="text-xs uppercase text-slate-900">Status</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-brand-700">{candidate.completion_percentage_snapshot ?? '—'}%</p>
-                            <p className="text-xs uppercase text-slate-500">Completion (at nomination)</p>
+                            <p className="text-xs uppercase text-slate-900">Completion (at nomination)</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-slate-900">{candidate.gwa_snapshot ?? '—'}</p>
-                            <p className="text-xs uppercase text-slate-500">GWA (at nomination)</p>
+                            <p className="text-xs uppercase text-slate-900">GWA (at nomination)</p>
                         </div>
                         <div>
                             <p className="text-2xl font-semibold text-slate-900">{candidate.deficiency_count_snapshot}</p>
-                            <p className="text-xs uppercase text-slate-500">Deficiencies (at nomination)</p>
+                            <p className="text-xs uppercase text-slate-900">Deficiencies (at nomination)</p>
                         </div>
                     </div>
-                    <div className="border-t border-slate-200 px-5 py-3 text-sm text-slate-500">
+                    <div className="border-t border-slate-200 px-5 py-3 text-sm text-slate-900">
                         Department: {candidate.student.department?.name ?? '—'} · Adviser: {candidate.student.adviser?.name ?? 'Unassigned'} ·
                         Nominated by {candidate.nominated_by?.name ?? '—'} on {candidate.nominated_at?.slice(0, 10) ?? '—'}
                     </div>
@@ -227,12 +227,12 @@ export default function Show({
                     />
                     {candidate.requirements.length === 0 ? (
                         <CardContent>
-                            <p className="text-sm text-slate-500">No requirement templates apply to this candidate's program.</p>
+                            <p className="text-sm text-slate-900">No requirement templates apply to this candidate's program.</p>
                         </CardContent>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                     <tr>
                                         <th className="px-5 py-2.5">Requirement</th>
                                         <th className="px-5 py-2.5">Status</th>
@@ -244,11 +244,11 @@ export default function Show({
                                         <tr key={r.id}>
                                             <td className="px-5 py-2.5">
                                                 {r.template.title}
-                                                {r.template.description && <p className="text-xs text-slate-400">{r.template.description}</p>}
+                                                {r.template.description && <p className="text-xs text-slate-900">{r.template.description}</p>}
                                             </td>
                                             <td className="px-5 py-2.5">
                                                 <Badge variant={REQ_STATUS_VARIANT[r.status]}>{r.status}</Badge>
-                                                {r.satisfied_by && <div className="text-xs text-slate-400">by {r.satisfied_by.name}</div>}
+                                                {r.satisfied_by && <div className="text-xs text-slate-900">by {r.satisfied_by.name}</div>}
                                             </td>
                                             {canManage && (
                                                 <td className="px-5 py-2.5">

@@ -19,14 +19,18 @@ export default function AcademicYearForm({
     initialValues,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
     initialValues: Partial<AcademicYearFormValues>;
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<AcademicYearFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<AcademicYearFormValues>({
         start_year: initialValues.start_year ?? '',
         end_year: initialValues.end_year ?? '',
         is_current: initialValues.is_current ?? false,
@@ -35,7 +39,14 @@ export default function AcademicYearForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     function onStartYearChange(value: string) {
@@ -88,7 +99,10 @@ export default function AcademicYearForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

@@ -117,7 +117,7 @@ export default function Show({
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             {headings.map((heading) => (
                                                 <th key={heading} className="px-3 py-2">

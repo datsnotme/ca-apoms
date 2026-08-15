@@ -10,8 +10,15 @@ import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated, PageProps } from '@/types';
+import StudentForm from './Form';
+
+interface Option {
+    id: number;
+    name: string;
+}
 
 interface StudentRow {
     id: number;
@@ -42,12 +49,22 @@ export default function Index({
     classifications,
     statuses,
     yearLevels,
+    departments,
+    programs,
+    curricula,
+    sections,
+    advisers,
 }: {
     students: Paginated<StudentRow>;
     filters: { search?: string; classification?: string; status?: string; year_level_id?: string };
     classifications: { value: string; label: string }[];
     statuses: { value: string; label: string }[];
-    yearLevels: { id: number; label: string }[];
+    yearLevels: { id: number; level: number; label: string }[];
+    departments?: Option[];
+    programs?: (Option & { department_id: number })[];
+    curricula?: (Option & { program_id: number })[];
+    sections?: { id: number; name: string; program_id: number; year_level_id: number }[];
+    advisers?: Option[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const canManage = auth.user.permissions.includes('students.manage');
@@ -55,6 +72,7 @@ export default function Index({
     const [classification, setClassification] = useState(filters.classification ?? '');
     const [status, setStatus] = useState(filters.status ?? '');
     const [yearLevelId, setYearLevelId] = useState(filters.year_level_id ?? '');
+    const [showCreate, setShowCreate] = useState(false);
     const bulk = useBulkSelection(students.data.map((s) => s.id));
 
     const applyFilters = (
@@ -87,9 +105,7 @@ export default function Index({
                     description="Search, filter, and manage student profiles."
                     actions={
                         canManage ? (
-                            <Link href={route('students.create')}>
-                                <PrimaryButton>Register Student</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Register Student</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -171,7 +187,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     {canManage && (
                                         <th scope="col" className="w-10 px-5 py-2.5">
@@ -256,6 +272,32 @@ export default function Index({
 
                 <Pagination links={students.links} from={students.from} to={students.to} total={students.total} />
             </Card>
+
+            {canManage && departments && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="4xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Register Student</h2>
+                        <div className="mt-4">
+                            <StudentForm
+                                action={route('students.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                programs={programs ?? []}
+                                curricula={curricula ?? []}
+                                yearLevels={yearLevels}
+                                sections={sections ?? []}
+                                advisers={advisers ?? []}
+                                classifications={classifications}
+                                statuses={statuses}
+                                submitLabel="Register Student"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

@@ -94,7 +94,7 @@ export default function AppLayout({
                         <button
                             type="button"
                             onClick={() => setSidebarOpen((v) => !v)}
-                            className="rounded-md p-2 text-slate-500 hover:bg-slate-100"
+                            className="rounded-md p-2 text-slate-900 hover:bg-slate-100"
                             aria-label="Toggle sidebar"
                         >
                             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -107,7 +107,7 @@ export default function AppLayout({
                     <div className="flex items-center gap-4">
                         <div className="hidden text-right sm:block">
                             <p className="text-sm font-medium text-slate-900">{auth.user.name}</p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-xs text-slate-900">
                                 {auth.user.role
                                     ?.split('-')
                                     .map((w) => w[0].toUpperCase() + w.slice(1))

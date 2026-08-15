@@ -1,9 +1,12 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import EmptyState from '@/Components/ui/EmptyState';
 import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
+import CompetencyCategoryForm from './Form';
 
 interface CategoryRow {
     id: number;
@@ -14,6 +17,8 @@ interface CategoryRow {
 }
 
 export default function Index({ categories, canManage }: { categories: CategoryRow[]; canManage: boolean }) {
+    const [showCreate, setShowCreate] = useState(false);
+
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Competency Framework</h1>}>
             <Head title="Competency Framework" />
@@ -24,9 +29,7 @@ export default function Index({ categories, canManage }: { categories: CategoryR
                     description="The rating framework evaluators use when assessing a graduating candidate."
                     actions={
                         canManage ? (
-                            <Link href={route('competency-categories.create')}>
-                                <PrimaryButton>Add Category</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Add Category</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -36,7 +39,7 @@ export default function Index({ categories, canManage }: { categories: CategoryR
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Category</th>
                                     <th className="px-5 py-2.5">Indicators</th>
@@ -57,7 +60,7 @@ export default function Index({ categories, canManage }: { categories: CategoryR
                                             ) : (
                                                 c.name
                                             )}
-                                            {c.description && <p className="text-xs text-slate-400">{c.description}</p>}
+                                            {c.description && <p className="text-xs text-slate-900">{c.description}</p>}
                                         </td>
                                         <td className="px-5 py-2.5">{c.indicators_count}</td>
                                         {canManage && (
@@ -83,6 +86,24 @@ export default function Index({ categories, canManage }: { categories: CategoryR
                     </div>
                 )}
             </Card>
+
+            {canManage && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="lg">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Add Competency Category</h2>
+                        <div className="mt-4">
+                            <CompetencyCategoryForm
+                                action={route('competency-categories.store')}
+                                method="post"
+                                initialValues={{}}
+                                submitLabel="Create Category"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

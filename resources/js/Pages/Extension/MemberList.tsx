@@ -35,11 +35,11 @@ export default function MemberList({
     return (
         <div className="flex flex-col gap-4">
             {members.length === 0 ? (
-                <p className="text-sm text-slate-500">No members yet.</p>
+                <p className="text-sm text-slate-900">No members yet.</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Member</th>
                                 <th className="px-3 py-2">Role</th>

@@ -36,20 +36,16 @@ class ResearchProjectController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', ResearchProject::class);
+
         return Inertia::render('Research/Index', [
             'projects' => $projects,
-            'canCreate' => $user->can('create', ResearchProject::class),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', ResearchProject::class);
-
-        return Inertia::render('Research/Create', [
-            'departments' => $this->departmentOptions($request),
-            'isAdmin' => $request->user()->hasRole(RoleName::Administrator->value),
-            'statuses' => $this->statusOptions(),
+            'canCreate' => $canCreate,
+            ...($canCreate ? [
+                'departments' => $this->departmentOptions($request),
+                'isAdmin' => $user->hasRole(RoleName::Administrator->value),
+                'statuses' => $this->statusOptions(),
+            ] : []),
         ]);
     }
 

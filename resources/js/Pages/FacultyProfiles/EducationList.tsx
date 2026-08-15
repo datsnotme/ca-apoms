@@ -129,11 +129,11 @@ export default function EducationList({
             )}
 
             {education.length === 0 ? (
-                <p className="text-sm text-slate-500">No education records yet.</p>
+                <p className="text-sm text-slate-900">No education records yet.</p>
             ) : (
                 <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Level</th>
                                 <th className="px-3 py-2">Degree</th>
@@ -148,7 +148,7 @@ export default function EducationList({
                                     <td className="px-3 py-2">{LEVEL_LABELS[e.level] ?? e.level}</td>
                                     <td className="px-3 py-2">
                                         {e.degree}
-                                        {e.field_of_study && <p className="text-xs text-slate-400">{e.field_of_study}</p>}
+                                        {e.field_of_study && <p className="text-xs text-slate-900">{e.field_of_study}</p>}
                                     </td>
                                     <td className="px-3 py-2">{e.institution}</td>
                                     <td className="px-3 py-2">{e.year_completed ?? '—'}</td>

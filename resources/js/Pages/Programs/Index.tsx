@@ -10,8 +10,10 @@ import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated, PageProps } from '@/types';
+import ProgramForm from './Form';
 
 interface ProgramRow {
     id: number;
@@ -25,13 +27,16 @@ interface ProgramRow {
 export default function Index({
     programs,
     filters,
+    departments,
 }: {
     programs: Paginated<ProgramRow>;
     filters: { search?: string };
+    departments?: { id: number; name: string }[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const canManage = auth.user.permissions.includes('programs.manage');
     const [search, setSearch] = useState(filters.search ?? '');
+    const [showCreate, setShowCreate] = useState(false);
     const bulk = useBulkSelection(programs.data.map((p) => p.id));
 
     const submitSearch: FormEventHandler = (e) => {
@@ -49,9 +54,7 @@ export default function Index({
                     description="Academic programs offered by the College of Agriculture."
                     actions={
                         canManage ? (
-                            <Link href={route('programs.create')}>
-                                <PrimaryButton>Add Program</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Add Program</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -84,7 +87,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     {canManage && (
                                         <th scope="col" className="w-10 px-5 py-2.5">
@@ -154,6 +157,25 @@ export default function Index({
                     total={programs.total}
                 />
             </Card>
+
+            {canManage && departments && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Add Program</h2>
+                        <div className="mt-4">
+                            <ProgramForm
+                                action={route('programs.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                submitLabel="Add Program"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

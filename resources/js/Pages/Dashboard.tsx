@@ -58,7 +58,7 @@ function StatTile({ stat }: { stat: StatCard }) {
         <Link href={stat.href}>
             <Card className="transition hover:border-brand-300 hover:shadow-sm">
                 <CardContent>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{stat.label}</p>
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-900">{stat.label}</p>
                     <p className="mt-1 text-2xl font-semibold text-slate-900">{stat.value}</p>
                 </CardContent>
             </Card>
@@ -75,7 +75,7 @@ function DistributionChart({ chartKey, data }: { chartKey: string; data: ChartDa
             <Card>
                 <CardHeader title={title} />
                 <CardContent>
-                    <p className="text-sm text-slate-500">No data yet.</p>
+                    <p className="text-sm text-slate-900">No data yet.</p>
                 </CardContent>
             </Card>
         );
@@ -142,7 +142,7 @@ export default function Dashboard({ role, departmentName, statCards, charts }: D
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">{ROLE_TITLES[role]}</h1>}>
             <Head title="Dashboard" />
 
-            {departmentName && <p className="mb-4 text-sm text-slate-500">{departmentName}</p>}
+            {departmentName && <p className="mb-4 text-sm text-slate-900">{departmentName}</p>}
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {statCards.map((stat) => (

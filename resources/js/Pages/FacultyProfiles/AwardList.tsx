@@ -106,11 +106,11 @@ export default function AwardList({
             )}
 
             {awards.length === 0 ? (
-                <p className="text-sm text-slate-500">No awards recorded yet.</p>
+                <p className="text-sm text-slate-900">No awards recorded yet.</p>
             ) : (
                 <div className="overflow-hidden rounded-md border border-slate-200">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Award</th>
                                 <th className="px-3 py-2">Date</th>
@@ -122,8 +122,8 @@ export default function AwardList({
                                 <tr key={a.id}>
                                     <td className="px-3 py-2">
                                         {a.title}
-                                        {a.awarding_body && <p className="text-xs text-slate-400">{a.awarding_body}</p>}
-                                        {a.description && <p className="text-xs text-slate-400">{a.description}</p>}
+                                        {a.awarding_body && <p className="text-xs text-slate-900">{a.awarding_body}</p>}
+                                        {a.description && <p className="text-xs text-slate-900">{a.description}</p>}
                                     </td>
                                     <td className="px-3 py-2">{a.date_awarded?.slice(0, 10) ?? '—'}</td>
                                     {canManage && (

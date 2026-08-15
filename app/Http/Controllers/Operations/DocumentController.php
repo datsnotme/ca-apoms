@@ -44,19 +44,15 @@ class DocumentController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', Document::class);
+
         return Inertia::render('Documents/Index', [
             'documents' => $documents,
             'categories' => DocumentCategory::query()->orderBy('name')->get(['id', 'name']),
-            'canCreate' => $user->can('create', Document::class),
+            'canCreate' => $canCreate,
             'filters' => $request->only('search', 'document_category_id'),
+            ...($canCreate ? $this->formOptions($request) : []),
         ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Document::class);
-
-        return Inertia::render('Documents/Create', $this->formOptions($request));
     }
 
     public function store(DocumentRequest $request): RedirectResponse

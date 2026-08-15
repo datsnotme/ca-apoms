@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
@@ -8,8 +9,10 @@ import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated } from '@/types';
+import AnnouncementForm from './Form';
 
 interface AnnouncementRow {
     id: number;
@@ -21,9 +24,20 @@ interface AnnouncementRow {
     can_manage: boolean;
 }
 
-export default function Index({ announcements, canCreate }: { announcements: Paginated<AnnouncementRow>; canCreate: boolean }) {
+export default function Index({
+    announcements,
+    canCreate,
+    departments,
+    isAdmin,
+}: {
+    announcements: Paginated<AnnouncementRow>;
+    canCreate: boolean;
+    departments?: { id: number; name: string }[];
+    isAdmin?: boolean;
+}) {
     const manageableIds = announcements.data.filter((a) => a.can_manage).map((a) => a.id);
     const bulk = useBulkSelection(manageableIds);
+    const [showCreate, setShowCreate] = useState(false);
 
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Announcements</h1>}>
@@ -35,9 +49,7 @@ export default function Index({ announcements, canCreate }: { announcements: Pag
                     description="College-wide and department bulletins."
                     actions={
                         canCreate ? (
-                            <Link href={route('announcements.create')}>
-                                <PrimaryButton>Post Announcement</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Post Announcement</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -70,7 +82,7 @@ export default function Index({ announcements, canCreate }: { announcements: Pag
                                             <Badge variant={a.department ? 'info' : 'neutral'}>{a.department?.name ?? 'Entire College'}</Badge>
                                         </div>
                                         <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{a.body}</p>
-                                        <p className="mt-2 text-xs text-slate-400">
+                                        <p className="mt-2 text-xs text-slate-900">
                                             {a.created_by?.name ?? 'Unknown'} · {a.created_at.slice(0, 10)}
                                         </p>
                                     </div>
@@ -93,6 +105,26 @@ export default function Index({ announcements, canCreate }: { announcements: Pag
 
                 <Pagination links={announcements.links} from={announcements.from} to={announcements.to} total={announcements.total} />
             </Card>
+
+            {canCreate && departments && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="lg">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Post Announcement</h2>
+                        <div className="mt-4">
+                            <AnnouncementForm
+                                action={route('announcements.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                isAdmin={Boolean(isAdmin)}
+                                submitLabel="Post Announcement"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

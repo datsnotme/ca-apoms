@@ -87,7 +87,7 @@ export default function Show({
                             <Badge variant={STATUS_VARIANT[project.status]}>{project.status_label}</Badge>
                             {project.department && <Badge variant="neutral">{project.department.name}</Badge>}
                             {project.funding_source && <Badge variant="info">{project.funding_source}</Badge>}
-                            <span className="text-xs text-slate-400">Created by {project.created_by?.name ?? 'Unknown'}</span>
+                            <span className="text-xs text-slate-900">Created by {project.created_by?.name ?? 'Unknown'}</span>
                         </div>
                         {project.description && <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{project.description}</p>}
                     </CardContent>

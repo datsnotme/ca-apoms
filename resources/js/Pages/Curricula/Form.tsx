@@ -24,6 +24,8 @@ export default function CurriculumForm({
     academicYears,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -32,8 +34,10 @@ export default function CurriculumForm({
     academicYears: { id: number; start_year: number; end_year: number }[];
     submitLabel: string;
     onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<CurriculumFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<CurriculumFormValues>({
         program_id: initialValues.program_id ?? String(programs[0]?.id ?? ''),
         effective_academic_year_id: initialValues.effective_academic_year_id ?? String(academicYears[0]?.id ?? ''),
         code: initialValues.code ?? '',
@@ -46,7 +50,14 @@ export default function CurriculumForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -149,8 +160,13 @@ export default function CurriculumForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                {onCancelHref && (
-                    <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                {(onCancel || onCancelHref) && (
+                    <SecondaryButton
+                        type="button"
+                        onClick={() =>
+                            onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref)
+                        }
+                    >
                         Cancel
                     </SecondaryButton>
                 )}

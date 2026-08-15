@@ -48,11 +48,11 @@ export default function ActivityList({
     return (
         <div className="flex flex-col gap-4">
             {activities.length === 0 ? (
-                <p className="text-sm text-slate-500">No activities recorded yet.</p>
+                <p className="text-sm text-slate-900">No activities recorded yet.</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Title</th>
                                 <th className="px-3 py-2">Type</th>
@@ -66,7 +66,7 @@ export default function ActivityList({
                                 <tr key={activity.id}>
                                     <td className="px-3 py-2">
                                         {activity.title}
-                                        {activity.description && <div className="text-xs text-slate-400">{activity.description}</div>}
+                                        {activity.description && <div className="text-xs text-slate-900">{activity.description}</div>}
                                     </td>
                                     <td className="px-3 py-2">{activity.activity_type}</td>
                                     <td className="px-3 py-2">{activity.activity_date ?? '—'}</td>

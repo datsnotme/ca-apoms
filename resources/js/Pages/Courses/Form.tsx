@@ -52,6 +52,8 @@ export default function CourseForm({
     courses,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -59,9 +61,11 @@ export default function CourseForm({
     departments: { id: number; name: string }[];
     courses: { id: number; code: string; title: string }[];
     submitLabel: string;
-    onCancelHref: string;
+    onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<CourseFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<CourseFormValues>({
         department_id: initialValues.department_id ?? String(departments[0]?.id ?? ''),
         code: initialValues.code ?? '',
         title: initialValues.title ?? '',
@@ -80,7 +84,14 @@ export default function CourseForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     function toggleId(field: 'prerequisite_ids' | 'corequisite_ids', id: number) {
@@ -272,7 +283,10 @@ export default function CourseForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                <SecondaryButton
+                    type="button"
+                    onClick={() => (onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref))}
+                >
                     Cancel
                 </SecondaryButton>
             </div>

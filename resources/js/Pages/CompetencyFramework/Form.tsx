@@ -18,14 +18,18 @@ export default function CompetencyCategoryForm({
     initialValues,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
     initialValues: Partial<CategoryFormValues>;
     submitLabel: string;
     onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<CategoryFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<CategoryFormValues>({
         name: initialValues.name ?? '',
         description: initialValues.description ?? '',
         sort_order: initialValues.sort_order ?? '0',
@@ -34,7 +38,14 @@ export default function CompetencyCategoryForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -77,8 +88,13 @@ export default function CompetencyCategoryForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                {onCancelHref && (
-                    <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                {(onCancel || onCancelHref) && (
+                    <SecondaryButton
+                        type="button"
+                        onClick={() =>
+                            onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref)
+                        }
+                    >
                         Cancel
                     </SecondaryButton>
                 )}

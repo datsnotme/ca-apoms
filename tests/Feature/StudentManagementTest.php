@@ -31,7 +31,7 @@ test('an admin can register a student', function () {
     ]);
 
     $student = Student::where('student_number', '2026-00001')->firstOrFail();
-    $response->assertRedirect("/students/{$student->id}/edit");
+    $response->assertRedirect('/students');
 
     $this->assertDatabaseHas('students', ['student_number' => '2026-00001']);
     $this->assertDatabaseHas('student_guardians', ['student_id' => $student->id, 'type' => 'guardian', 'name' => 'Maria Dela Cruz']);
@@ -96,8 +96,9 @@ test('changing a student status records a status history entry with a reason', f
 test('a faculty member can view but not manage students', function () {
     $faculty = userWithRole(RoleName::Faculty->value, $this->department);
 
-    $this->actingAs($faculty)->get('/students')->assertOk();
-    $this->actingAs($faculty)->get('/students/create')->assertForbidden();
+    $this->actingAs($faculty)->get('/students')->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('departments'));
+    $this->actingAs($faculty)->post('/students', ['student_number' => 'X'])->assertForbidden();
 });
 
 test('the year level filter narrows the student list', function () {

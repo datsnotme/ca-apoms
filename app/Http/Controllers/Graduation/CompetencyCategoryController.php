@@ -25,13 +25,6 @@ class CompetencyCategoryController extends Controller
         ]);
     }
 
-    public function create(): Response
-    {
-        $this->authorize('create', CompetencyCategory::class);
-
-        return Inertia::render('CompetencyFramework/Create');
-    }
-
     public function store(CompetencyCategoryRequest $request): RedirectResponse
     {
         $category = CompetencyCategory::create($request->validated());

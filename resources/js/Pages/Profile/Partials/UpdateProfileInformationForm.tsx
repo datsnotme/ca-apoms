@@ -35,13 +35,13 @@ export default function UpdateProfileInformationForm({ user }: { user: ProfileUs
         <section>
             <header>
                 <h2 className="text-lg font-medium text-slate-900">Profile Information</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-900">
                     Employee number, email, and username are managed by the College
                     Administrator via User Management.
                 </p>
             </header>
 
-            <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-slate-500">
+            <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-slate-900">
                 <div>
                     <span className="block text-xs uppercase tracking-wide">Employee No.</span>
                     {user.employee_number}
@@ -123,7 +123,7 @@ export default function UpdateProfileInformationForm({ user }: { user: ProfileUs
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-slate-500">Saved.</p>
+                        <p className="text-sm text-slate-900">Saved.</p>
                     </Transition>
                 </div>
             </form>

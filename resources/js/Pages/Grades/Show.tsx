@@ -146,7 +146,7 @@ function CorrectGradeForm({
                 <button type="submit" disabled={processing} className="text-xs font-medium text-brand-700 hover:text-brand-900">
                     Save
                 </button>
-                <button type="button" onClick={() => setOpen(false)} className="text-xs text-slate-500 hover:text-slate-700">
+                <button type="button" onClick={() => setOpen(false)} className="text-xs text-slate-900 hover:text-slate-700">
                     Cancel
                 </button>
             </div>
@@ -251,7 +251,7 @@ export default function Show({
                     <CardHeader title="Grade Sheet" description={`${roster.length} / ${classSection.max_students} enrolled`} />
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Student No.</th>
                                     <th className="px-5 py-2.5">Name</th>

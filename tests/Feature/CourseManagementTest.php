@@ -59,8 +59,9 @@ test('prerequisites and corequisites are saved when creating a course', function
 test('a faculty member can view but not manage courses', function () {
     $faculty = userWithRole(RoleName::Faculty->value, $this->department);
 
-    $this->actingAs($faculty)->get('/courses')->assertOk();
-    $this->actingAs($faculty)->get('/courses/create')->assertForbidden();
+    $this->actingAs($faculty)->get('/courses')->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('departments'));
+    $this->actingAs($faculty)->post('/courses', ['code' => 'NEW'])->assertForbidden();
 });
 
 test('an admin can bulk archive multiple courses at once', function () {

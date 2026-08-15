@@ -1,4 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
 import Badge from '@/Components/ui/Badge';
@@ -6,7 +7,9 @@ import EmptyState from '@/Components/ui/EmptyState';
 import Pagination from '@/Components/ui/Pagination';
 import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import PrimaryButton from '@/Components/PrimaryButton';
+import Modal from '@/Components/Modal';
 import { Paginated } from '@/types';
+import FacilityForm from './Form';
 
 interface FacilityRow {
     id: number;
@@ -19,7 +22,19 @@ interface FacilityRow {
     can_manage: boolean;
 }
 
-export default function Index({ facilities, canCreate }: { facilities: Paginated<FacilityRow>; canCreate: boolean }) {
+export default function Index({
+    facilities,
+    canCreate,
+    departments,
+    isAdmin,
+}: {
+    facilities: Paginated<FacilityRow>;
+    canCreate: boolean;
+    departments?: { id: number; name: string }[];
+    isAdmin?: boolean;
+}) {
+    const [showCreate, setShowCreate] = useState(false);
+
     return (
         <AppLayout header={<h1 className="text-lg font-semibold text-slate-900">Facilities</h1>}>
             <Head title="Facilities" />
@@ -30,9 +45,7 @@ export default function Index({ facilities, canCreate }: { facilities: Paginated
                     description="Laboratories, farms, greenhouses, field locations, classrooms, and other college spaces."
                     actions={
                         canCreate ? (
-                            <Link href={route('facilities.create')}>
-                                <PrimaryButton>Register Facility</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>Register Facility</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -75,6 +88,26 @@ export default function Index({ facilities, canCreate }: { facilities: Paginated
 
                 <Pagination links={facilities.links} from={facilities.from} to={facilities.to} total={facilities.total} />
             </Card>
+
+            {canCreate && departments && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Register Facility</h2>
+                        <div className="mt-4">
+                            <FacilityForm
+                                action={route('facilities.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                isAdmin={Boolean(isAdmin)}
+                                submitLabel="Register Facility"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

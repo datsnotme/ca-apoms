@@ -108,7 +108,7 @@ export default function InterventionFollowups({
     return (
         <div className="flex flex-col gap-4">
             {followups.length === 0 ? (
-                <p className="text-sm text-slate-500">No intervention follow-ups yet.</p>
+                <p className="text-sm text-slate-900">No intervention follow-ups yet.</p>
             ) : (
                 <div className="flex flex-col gap-3">
                     {followups.map((f) => (
@@ -116,14 +116,14 @@ export default function InterventionFollowups({
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="flex items-center gap-2">
                                     <Badge variant={STATUS_VARIANT[f.status]}>{f.status.replace(/_/g, ' ')}</Badge>
-                                    {f.due_date && <span className="text-xs text-slate-400">Due {f.due_date.slice(0, 10)}</span>}
-                                    {f.assigned_to && <span className="text-xs text-slate-400">Assigned to {f.assigned_to.name}</span>}
+                                    {f.due_date && <span className="text-xs text-slate-900">Due {f.due_date.slice(0, 10)}</span>}
+                                    {f.assigned_to && <span className="text-xs text-slate-900">Assigned to {f.assigned_to.name}</span>}
                                 </div>
                                 {canManage && <StatusControl studentId={studentId} followup={f} />}
                             </div>
                             <p className="mt-2 text-sm text-slate-700">{f.description}</p>
                             {f.status === 'completed' && f.completed_by && (
-                                <p className="mt-1 text-xs text-slate-400">Completed by {f.completed_by.name}</p>
+                                <p className="mt-1 text-xs text-slate-900">Completed by {f.completed_by.name}</p>
                             )}
                         </div>
                     ))}

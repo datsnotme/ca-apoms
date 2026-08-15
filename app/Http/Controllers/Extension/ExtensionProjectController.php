@@ -36,20 +36,16 @@ class ExtensionProjectController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', ExtensionProject::class);
+
         return Inertia::render('Extension/Index', [
             'projects' => $projects,
-            'canCreate' => $user->can('create', ExtensionProject::class),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', ExtensionProject::class);
-
-        return Inertia::render('Extension/Create', [
-            'departments' => $this->departmentOptions($request),
-            'isAdmin' => $request->user()->hasRole(RoleName::Administrator->value),
-            'statuses' => $this->statusOptions(),
+            'canCreate' => $canCreate,
+            ...($canCreate ? [
+                'departments' => $this->departmentOptions($request),
+                'isAdmin' => $user->hasRole(RoleName::Administrator->value),
+                'statuses' => $this->statusOptions(),
+            ] : []),
         ]);
     }
 

@@ -58,7 +58,7 @@ export default function Index({ notifications }: { notifications: Paginated<AppN
                                         {!n.read_at && <Badge variant="info">New</Badge>}
                                     </div>
                                     <p className="mt-1 text-sm text-slate-600">{n.message}</p>
-                                    <p className="mt-1 text-xs text-slate-400">{n.created_at.slice(0, 16).replace('T', ' ')}</p>
+                                    <p className="mt-1 text-xs text-slate-900">{n.created_at.slice(0, 16).replace('T', ' ')}</p>
                                 </div>
                             </button>
                         ))}

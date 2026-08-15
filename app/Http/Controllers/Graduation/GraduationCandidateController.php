@@ -32,30 +32,21 @@ class GraduationCandidateController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $canManage = $request->user()->can('create', GraduationCandidate::class);
+
         return Inertia::render('GraduationCandidates/Index', [
             'candidates' => $candidates,
             'filters' => $request->only('status'),
-            'canManage' => $request->user()->can('create', GraduationCandidate::class),
+            'canManage' => $canManage,
             'academicYears' => AcademicYear::query()->orderByDesc('start_year')->get(['id', 'start_year', 'end_year']),
             'semesters' => Semester::with('academicYear:id,start_year,end_year')
                 ->orderByDesc('id')
                 ->get(['id', 'academic_year_id', 'term'])
                 ->map(fn ($s) => ['id' => $s->id, 'label' => "{$s->academicYear->start_year}-{$s->academicYear->end_year} {$s->term->label()}"]),
-        ]);
-    }
-
-    public function create(): Response
-    {
-        $this->authorize('create', GraduationCandidate::class);
-
-        return Inertia::render('GraduationCandidates/Create', [
-            'eligibleStudents' => $this->candidates->identifyEligibleStudents()
-                ->map(fn ($s) => ['id' => $s->id, 'student_number' => $s->student_number, 'name' => $s->name]),
-            'academicYears' => AcademicYear::query()->orderByDesc('start_year')->get(['id', 'start_year', 'end_year']),
-            'semesters' => Semester::with('academicYear:id,start_year,end_year')
-                ->orderByDesc('id')
-                ->get(['id', 'academic_year_id', 'term'])
-                ->map(fn ($s) => ['id' => $s->id, 'label' => "{$s->academicYear->start_year}-{$s->academicYear->end_year} {$s->term->label()}"]),
+            ...($canManage ? [
+                'eligibleStudents' => $this->candidates->identifyEligibleStudents()
+                    ->map(fn ($s) => ['id' => $s->id, 'student_number' => $s->student_number, 'name' => $s->name]),
+            ] : []),
         ]);
     }
 

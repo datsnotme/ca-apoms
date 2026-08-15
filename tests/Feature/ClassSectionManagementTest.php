@@ -58,8 +58,9 @@ test('the same course cannot have two sections with the same label in one semest
 test('a faculty member can view but not create class sections', function () {
     $faculty = userWithRole(RoleName::Faculty->value, $this->department);
 
-    $this->actingAs($faculty)->get('/class-sections')->assertOk();
-    $this->actingAs($faculty)->get('/class-sections/create')->assertForbidden();
+    $this->actingAs($faculty)->get('/class-sections')->assertOk()
+        ->assertInertia(fn ($page) => $page->missing('courses'));
+    $this->actingAs($faculty)->post('/class-sections', ['section_label' => 'X'])->assertForbidden();
 });
 
 test('a department head only sees class sections for their own department', function () {

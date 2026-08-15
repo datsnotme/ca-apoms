@@ -85,7 +85,7 @@ export default function Show({
                     <CardContent>
                         <div className="flex flex-wrap items-center gap-2">
                             <Badge variant={document.department ? 'info' : 'neutral'}>{document.department?.name ?? 'Entire College'}</Badge>
-                            <span className="text-xs text-slate-400">Filed by {document.uploaded_by?.name ?? 'Unknown'}</span>
+                            <span className="text-xs text-slate-900">Filed by {document.uploaded_by?.name ?? 'Unknown'}</span>
                         </div>
                         {document.description && <p className="mt-3 whitespace-pre-wrap text-sm text-slate-600">{document.description}</p>}
                     </CardContent>
@@ -97,7 +97,7 @@ export default function Show({
                         <div className="flex flex-col gap-4">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">Version</th>
                                             <th className="px-3 py-2">File</th>
@@ -117,12 +117,12 @@ export default function Show({
                                                     >
                                                         {v.original_filename}
                                                     </a>
-                                                    <span className="ml-1 text-xs text-slate-400">({formatBytes(v.file_size)})</span>
+                                                    <span className="ml-1 text-xs text-slate-900">({formatBytes(v.file_size)})</span>
                                                 </td>
-                                                <td className="px-3 py-2 text-slate-500">{v.notes ?? '—'}</td>
+                                                <td className="px-3 py-2 text-slate-900">{v.notes ?? '—'}</td>
                                                 <td className="px-3 py-2">
                                                     {v.uploaded_at.slice(0, 10)}
-                                                    {v.uploaded_by && <div className="text-xs text-slate-400">by {v.uploaded_by.name}</div>}
+                                                    {v.uploaded_by && <div className="text-xs text-slate-900">by {v.uploaded_by.name}</div>}
                                                 </td>
                                                 {canManage && (
                                                     <td className="px-3 py-2 text-right">

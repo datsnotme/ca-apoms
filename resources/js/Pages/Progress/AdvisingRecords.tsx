@@ -57,7 +57,7 @@ export default function AdvisingRecords({
     return (
         <div className="flex flex-col gap-4">
             {records.length === 0 ? (
-                <p className="text-sm text-slate-500">No advising sessions recorded yet.</p>
+                <p className="text-sm text-slate-900">No advising sessions recorded yet.</p>
             ) : (
                 <div className="flex flex-col gap-3">
                     {records.map((r) => (
@@ -66,7 +66,7 @@ export default function AdvisingRecords({
                                 <p className="text-sm font-medium text-slate-900">
                                     {r.session_date.slice(0, 10)} · {r.adviser?.name ?? 'Unknown'}
                                     {r.semester && (
-                                        <span className="ml-2 text-xs text-slate-400">
+                                        <span className="ml-2 text-xs text-slate-900">
                                             {r.semester.academic_year.start_year}-{r.semester.academic_year.end_year} {r.semester.term}
                                         </span>
                                     )}
@@ -75,7 +75,7 @@ export default function AdvisingRecords({
                             </div>
                             <p className="mt-2 text-sm text-slate-700">{r.summary}</p>
                             {r.recommendations && (
-                                <p className="mt-1 text-sm text-slate-500">
+                                <p className="mt-1 text-sm text-slate-900">
                                     <span className="font-medium">Recommendations:</span> {r.recommendations}
                                 </p>
                             )}

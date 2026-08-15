@@ -44,13 +44,6 @@ class InternalRequestController extends Controller
         ]);
     }
 
-    public function create(): Response
-    {
-        $this->authorize('create', InternalRequest::class);
-
-        return Inertia::render('InternalRequests/Create');
-    }
-
     public function store(InternalRequestRequest $request): RedirectResponse
     {
         InternalRequest::create([

@@ -102,11 +102,11 @@ export default function ActionItemList({
     return (
         <div className="flex flex-col gap-4">
             {actionItems.length === 0 ? (
-                <p className="text-sm text-slate-500">No action items yet.</p>
+                <p className="text-sm text-slate-900">No action items yet.</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Description</th>
                                 <th className="px-3 py-2">Assigned To</th>
@@ -121,7 +121,7 @@ export default function ActionItemList({
                                     <td className="px-3 py-2">
                                         {item.description}
                                         {item.completed_by && (
-                                            <div className="text-xs text-slate-400">
+                                            <div className="text-xs text-slate-900">
                                                 Completed by {item.completed_by.name}
                                                 {item.completed_at ? ` on ${item.completed_at.slice(0, 10)}` : ''}
                                             </div>

@@ -110,7 +110,7 @@ export default function Index({
                         {localDevice ? (
                             <p className="text-sm text-slate-700">
                                 Syncing as <span className="font-medium">{localDevice.name}</span>{' '}
-                                <span className="font-mono text-xs text-slate-500">({localDevice.device_code})</span>
+                                <span className="font-mono text-xs text-slate-900">({localDevice.device_code})</span>
                             </p>
                         ) : (
                             <p className="text-sm text-amber-700">
@@ -136,7 +136,7 @@ export default function Index({
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">Name</th>
                                             <th className="px-3 py-2">Base URL</th>
@@ -206,7 +206,7 @@ export default function Index({
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">Name</th>
                                             <th className="px-3 py-2">Code</th>
@@ -271,7 +271,7 @@ export default function Index({
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                    <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                         <tr>
                                             <th className="px-3 py-2">When</th>
                                             <th className="px-3 py-2">Device</th>
@@ -312,7 +312,7 @@ export default function Index({
             <Modal show={deleteTarget !== null} onClose={() => setDeleteTarget(null)} maxWidth="md">
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-slate-900">Remove this remote?</h2>
-                    <p className="mt-2 text-sm text-slate-500">
+                    <p className="mt-2 text-sm text-slate-900">
                         <span className="font-medium">{deleteTarget?.name}</span> will no longer be synced with. This
                         does not delete any data already synced from it.
                     </p>

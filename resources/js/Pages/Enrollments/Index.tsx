@@ -1,4 +1,4 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage, useForm } from '@inertiajs/react';
 import { FormEventHandler, useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardHeader } from '@/Components/ui/Card';
@@ -9,7 +9,11 @@ import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import BulkDeleteBar from '@/Components/ui/BulkDeleteBar';
 import Checkbox from '@/Components/Checkbox';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
+import Modal from '@/Components/Modal';
 import useBulkSelection from '@/hooks/useBulkSelection';
 import { Paginated, PageProps } from '@/types';
 
@@ -21,21 +25,32 @@ interface EnrollmentRow {
     semester: { term: string; academic_year: { start_year: number; end_year: number } } | null;
 }
 
+interface StudentOption {
+    id: number;
+    student_number: string;
+    surname: string;
+    first_name: string;
+    middle_name: string | null;
+}
+
 const STATUS_VARIANT = { enrolled: 'success', withdrawn: 'danger', completed: 'info' } as const;
 
 export default function Index({
     enrollments,
     filters,
     semesters,
+    students,
 }: {
     enrollments: Paginated<EnrollmentRow>;
     filters: { search?: string; semester_id?: string };
     semesters: { id: number; label: string }[];
+    students?: StudentOption[];
 }) {
     const { auth } = usePage<PageProps>().props;
     const canManage = auth.user.permissions.includes('enrollment.manage');
     const [search, setSearch] = useState(filters.search ?? '');
     const [semesterId, setSemesterId] = useState(filters.semester_id ?? '');
+    const [showCreate, setShowCreate] = useState(false);
     const bulk = useBulkSelection(enrollments.data.map((e) => e.id));
 
     const submitSearch: FormEventHandler = (e) => {
@@ -53,9 +68,7 @@ export default function Index({
                     description="Per-semester enrollment records and enrolled courses."
                     actions={
                         canManage ? (
-                            <Link href={route('enrollments.create')}>
-                                <PrimaryButton>New Enrollment</PrimaryButton>
-                            </Link>
+                            <PrimaryButton onClick={() => setShowCreate(true)}>New Enrollment</PrimaryButton>
                         ) : undefined
                     }
                 />
@@ -100,7 +113,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     {canManage && (
                                         <th scope="col" className="w-10 px-5 py-2.5">
@@ -161,6 +174,91 @@ export default function Index({
 
                 <Pagination links={enrollments.links} from={enrollments.from} to={enrollments.to} total={enrollments.total} />
             </Card>
+
+            {canManage && students && (
+                <NewEnrollmentModal
+                    show={showCreate}
+                    students={students}
+                    semesters={semesters}
+                    onClose={() => setShowCreate(false)}
+                />
+            )}
         </AppLayout>
+    );
+}
+
+function NewEnrollmentModal({
+    show,
+    students,
+    semesters,
+    onClose,
+}: {
+    show: boolean;
+    students: StudentOption[];
+    semesters: { id: number; label: string }[];
+    onClose: () => void;
+}) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        student_id: String(students[0]?.id ?? ''),
+        semester_id: String(semesters[0]?.id ?? ''),
+    });
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        post(route('enrollments.store'), {
+            onSuccess: () => {
+                reset();
+                onClose();
+            },
+        });
+    };
+
+    return (
+        <Modal show={show} onClose={onClose} maxWidth="lg">
+            <div className="p-6">
+                <h2 className="text-lg font-medium text-slate-900">Enroll a Student</h2>
+                <p className="mt-1 text-sm text-slate-600">Creates the semester-level enrollment; courses are added afterward.</p>
+                <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <InputLabel value="Student" />
+                        <select
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                            value={data.student_id}
+                            onChange={(e) => setData('student_id', e.target.value)}
+                        >
+                            {students.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.student_number} — {s.first_name} {s.middle_name} {s.surname}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.student_id} className="mt-2" />
+                    </div>
+
+                    <div>
+                        <InputLabel value="Semester" />
+                        <select
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                            value={data.semester_id}
+                            onChange={(e) => setData('semester_id', e.target.value)}
+                        >
+                            {semesters.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                    {s.label}
+                                </option>
+                            ))}
+                        </select>
+                        <InputError message={errors.semester_id} className="mt-2" />
+                    </div>
+
+                    <div className="flex gap-3 sm:col-span-2">
+                        <PrimaryButton disabled={processing}>Create Enrollment</PrimaryButton>
+                        <SecondaryButton type="button" onClick={onClose}>
+                            Cancel
+                        </SecondaryButton>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     );
 }

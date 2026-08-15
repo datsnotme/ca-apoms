@@ -9,7 +9,9 @@ import ConfirmDeleteButton from '@/Components/ui/ConfirmDeleteButton';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
+import Modal from '@/Components/Modal';
 import { Paginated } from '@/types';
+import UserForm from './Form';
 
 interface UserRow {
     id: number;
@@ -32,12 +34,17 @@ export default function Index({
     users,
     filters,
     showArchived,
+    departments,
+    roles,
 }: {
     users: Paginated<UserRow>;
     filters: { search?: string };
     showArchived: boolean;
+    departments?: { id: number; name: string }[];
+    roles?: { value: string; label: string }[];
 }) {
     const [search, setSearch] = useState(filters.search ?? '');
+    const [showCreate, setShowCreate] = useState(false);
 
     const submitSearch: FormEventHandler = (e) => {
         e.preventDefault();
@@ -61,10 +68,8 @@ export default function Index({
                             <SecondaryButton onClick={toggleArchived}>
                                 {showArchived ? 'View Active' : 'View Archived'}
                             </SecondaryButton>
-                            {!showArchived && (
-                                <Link href={route('users.create')}>
-                                    <PrimaryButton>Add User</PrimaryButton>
-                                </Link>
+                            {!showArchived && roles && (
+                                <PrimaryButton onClick={() => setShowCreate(true)}>Add User</PrimaryButton>
                             )}
                         </div>
                     }
@@ -86,7 +91,7 @@ export default function Index({
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Employee No.</th>
                                     <th className="px-5 py-2.5">Name</th>
@@ -102,7 +107,7 @@ export default function Index({
                                         <td className="px-5 py-2.5 font-mono text-xs">{u.employee_number}</td>
                                         <td className="px-5 py-2.5">
                                             <div>{u.name}</div>
-                                            <div className="text-xs text-slate-400">{u.email}</div>
+                                            <div className="text-xs text-slate-900">{u.email}</div>
                                         </td>
                                         <td className="px-5 py-2.5">
                                             {u.roles[0] ? ROLE_LABELS[u.roles[0].name] ?? u.roles[0].name : '—'}
@@ -149,6 +154,26 @@ export default function Index({
 
                 <Pagination links={users.links} from={users.from} to={users.to} total={users.total} />
             </Card>
+
+            {roles && departments && (
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+                    <div className="p-6">
+                        <h2 className="text-lg font-medium text-slate-900">Add User</h2>
+                        <div className="mt-4">
+                            <UserForm
+                                action={route('users.store')}
+                                method="post"
+                                initialValues={{}}
+                                departments={departments}
+                                roles={roles}
+                                submitLabel="Add User"
+                                onCancel={() => setShowCreate(false)}
+                                onSuccess={() => setShowCreate(false)}
+                            />
+                        </div>
+                    </div>
+                </Modal>
+            )}
         </AppLayout>
     );
 }

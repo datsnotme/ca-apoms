@@ -219,29 +219,29 @@ export default function Show({
                         ) : (
                             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <dt className="text-xs uppercase text-slate-500">Academic Rank</dt>
+                                    <dt className="text-xs uppercase text-slate-900">Academic Rank</dt>
                                     <dd className="text-sm text-slate-800">{profile.academic_rank ?? '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-slate-500">Employment Status</dt>
+                                    <dt className="text-xs uppercase text-slate-900">Employment Status</dt>
                                     <dd className="text-sm text-slate-800">
                                         <Badge variant="neutral">{EMPLOYMENT_LABELS[profile.employment_status]}</Badge>
                                     </dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-slate-500">Date Hired</dt>
+                                    <dt className="text-xs uppercase text-slate-900">Date Hired</dt>
                                     <dd className="text-sm text-slate-800">{profile.date_hired ?? '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-slate-500">Specialization</dt>
+                                    <dt className="text-xs uppercase text-slate-900">Specialization</dt>
                                     <dd className="text-sm text-slate-800">{profile.specialization ?? '—'}</dd>
                                 </div>
                                 <div>
-                                    <dt className="text-xs uppercase text-slate-500">Office Location</dt>
+                                    <dt className="text-xs uppercase text-slate-900">Office Location</dt>
                                     <dd className="text-sm text-slate-800">{profile.office_location ?? '—'}</dd>
                                 </div>
                                 <div className="sm:col-span-2">
-                                    <dt className="text-xs uppercase text-slate-500">Bio</dt>
+                                    <dt className="text-xs uppercase text-slate-900">Bio</dt>
                                     <dd className="text-sm text-slate-800">{profile.bio ?? '—'}</dd>
                                 </div>
                             </dl>

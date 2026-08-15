@@ -170,7 +170,7 @@ export default function Checklist({
             )}
 
             {sortedGroups.length === 0 && (
-                <p className="text-sm text-slate-500">No courses added to this curriculum yet.</p>
+                <p className="text-sm text-slate-900">No courses added to this curriculum yet.</p>
             )}
 
             {sortedGroups.map(([key, group]) => {
@@ -182,7 +182,7 @@ export default function Checklist({
                         </h3>
                         <div className="overflow-hidden rounded-md border border-slate-200">
                             <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                                <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                     <tr>
                                         <th className="px-3 py-2">Code</th>
                                         <th className="px-3 py-2">Title</th>

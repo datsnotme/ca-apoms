@@ -45,11 +45,11 @@ export default function AttendeeList({
     return (
         <div className="flex flex-col gap-4">
             {attendees.length === 0 ? (
-                <p className="text-sm text-slate-500">No attendees invited yet.</p>
+                <p className="text-sm text-slate-900">No attendees invited yet.</p>
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                             <tr>
                                 <th className="px-3 py-2">Attendee</th>
                                 <th className="px-3 py-2">Attendance</th>

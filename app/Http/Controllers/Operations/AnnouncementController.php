@@ -37,19 +37,15 @@ class AnnouncementController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', Announcement::class);
+
         return Inertia::render('Announcements/Index', [
             'announcements' => $announcements,
-            'canCreate' => $user->can('create', Announcement::class),
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Announcement::class);
-
-        return Inertia::render('Announcements/Create', [
-            'departments' => $this->departmentOptions($request),
-            'isAdmin' => $request->user()->hasRole(RoleName::Administrator->value),
+            'canCreate' => $canCreate,
+            ...($canCreate ? [
+                'departments' => $this->departmentOptions($request),
+                'isAdmin' => $user->hasRole(RoleName::Administrator->value),
+            ] : []),
         ]);
     }
 

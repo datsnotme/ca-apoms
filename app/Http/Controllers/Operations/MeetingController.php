@@ -37,20 +37,16 @@ class MeetingController extends Controller
             ])
             ->withQueryString();
 
+        $canCreate = $user->can('create', Meeting::class);
+
         return Inertia::render('Meetings/Index', [
             'meetings' => $meetings,
-            'canCreate' => $user->can('create', Meeting::class),
+            'canCreate' => $canCreate,
             'filters' => ['include_past' => $request->boolean('include_past')],
-        ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        $this->authorize('create', Meeting::class);
-
-        return Inertia::render('Meetings/Create', [
-            'departments' => $this->departmentOptions($request),
-            'isAdmin' => $request->user()->hasRole(RoleName::Administrator->value),
+            ...($canCreate ? [
+                'departments' => $this->departmentOptions($request),
+                'isAdmin' => $user->hasRole(RoleName::Administrator->value),
+            ] : []),
         ]);
     }
 

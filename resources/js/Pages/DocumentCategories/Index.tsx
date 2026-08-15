@@ -39,7 +39,7 @@ export default function Index({ categories }: { categories: CategoryRow[] }) {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
+                            <thead className="bg-slate-50 text-left text-xs uppercase text-slate-900">
                                 <tr>
                                     <th className="px-5 py-2.5">Name</th>
                                     <th className="px-5 py-2.5">Description</th>
@@ -51,7 +51,7 @@ export default function Index({ categories }: { categories: CategoryRow[] }) {
                                 {categories.map((c) => (
                                     <tr key={c.id}>
                                         <td className="px-5 py-2.5">{c.name}</td>
-                                        <td className="px-5 py-2.5 text-slate-500">{c.description ?? '—'}</td>
+                                        <td className="px-5 py-2.5 text-slate-900">{c.description ?? '—'}</td>
                                         <td className="px-5 py-2.5">{c.documents_count}</td>
                                         <td className="px-5 py-2.5 text-right">
                                             <ConfirmDeleteButton

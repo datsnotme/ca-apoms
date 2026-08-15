@@ -28,6 +28,8 @@ export default function ClassSectionForm({
     statuses,
     submitLabel,
     onCancelHref,
+    onCancel,
+    onSuccess,
 }: {
     action: string;
     method: 'post' | 'put';
@@ -38,8 +40,10 @@ export default function ClassSectionForm({
     statuses: { value: string; label: string }[];
     submitLabel: string;
     onCancelHref?: string;
+    onCancel?: () => void;
+    onSuccess?: () => void;
 }) {
-    const { data, setData, post, put, processing, errors } = useForm<ClassSectionFormValues>({
+    const { data, setData, post, put, processing, errors, reset } = useForm<ClassSectionFormValues>({
         course_id: initialValues.course_id ?? String(courses[0]?.id ?? ''),
         semester_id: initialValues.semester_id ?? String(semesters[0]?.id ?? ''),
         section_label: initialValues.section_label ?? '',
@@ -51,7 +55,14 @@ export default function ClassSectionForm({
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         const submitFn = method === 'post' ? post : put;
-        submitFn(action);
+        submitFn(action, {
+            onSuccess: () => {
+                if (method === 'post') {
+                    reset();
+                }
+                onSuccess?.();
+            },
+        });
     };
 
     return (
@@ -138,8 +149,13 @@ export default function ClassSectionForm({
 
             <div className="flex gap-3 sm:col-span-2">
                 <PrimaryButton disabled={processing}>{submitLabel}</PrimaryButton>
-                {onCancelHref && (
-                    <SecondaryButton type="button" onClick={() => (window.location.href = onCancelHref)}>
+                {(onCancel || onCancelHref) && (
+                    <SecondaryButton
+                        type="button"
+                        onClick={() =>
+                            onCancel ? onCancel() : onCancelHref && (window.location.href = onCancelHref)
+                        }
+                    >
                         Cancel
                     </SecondaryButton>
                 )}
