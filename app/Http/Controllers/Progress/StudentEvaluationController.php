@@ -54,7 +54,7 @@ class StudentEvaluationController extends Controller
         ]);
     }
 
-    public function show(Request $request, Student $student): Response
+    public function show(Student $student): Response
     {
         $this->authorize('viewProgress', $student);
 
@@ -65,12 +65,13 @@ class StudentEvaluationController extends Controller
         $pdf = Pdf::loadView('pdf.student-evaluation', [
             'student' => $student,
             'college' => College::query()->first(),
-            'buckets' => $data['buckets'],
+            'years' => $data['years'],
+            'bucketSummary' => $data['bucket_summary'],
             'gwa' => $data['gwa'],
             'completionPercentage' => $data['completion_percentage'],
             'flaggedCourses' => $data['flagged_courses'],
             'suggestedClassification' => $data['suggested_classification'],
-            'generatedBy' => $request->user(),
+            'summary' => $data['summary'],
         ]);
 
         return $pdf->stream("student-evaluation-{$student->student_number}.pdf");

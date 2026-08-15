@@ -40,21 +40,84 @@ function enrollStudentInEvalCourse(Student $student, Semester $semester, Course 
     return EnrollmentCourse::factory()->create(['student_enrollment_id' => $enrollment->id, 'class_section_id' => $section->id, 'status' => 'Enrolled']);
 }
 
-test('checklist courses are grouped into their form bucket', function () {
-    $gecCourse = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'general_education']);
-    $majorCourse = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+test('courses are grouped by year level and then by semester within each year', function () {
+    $year1Course = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    $year2CourseFirst = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    $year2CourseSecond = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
 
-    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $gecCourse->id, 'year_level' => 1, 'units' => 3]);
-    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $majorCourse->id, 'year_level' => 1, 'units' => 3]);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $year1Course->id, 'year_level' => 1, 'semester' => 'FIRST', 'units' => 3]);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $year2CourseFirst->id, 'year_level' => 2, 'semester' => 'FIRST', 'units' => 3]);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $year2CourseSecond->id, 'year_level' => 2, 'semester' => 'SECOND', 'units' => 3]);
 
     $result = $this->service->evaluate($this->student);
 
-    $labels = $result['buckets']->pluck('label')->all();
-    expect($labels)->toContain('General Education', 'Major Subjects');
+    expect($result['years'])->toHaveCount(2);
+    expect($result['years'][0]['year_level'])->toBe(1);
+    expect($result['years'][0]['semesters'])->toHaveCount(1);
+    expect($result['years'][0]['semesters'][0]['semester'])->toBe('FIRST');
+    expect($result['years'][0]['semesters'][0]['rows'])->toHaveCount(1);
 
-    $gec = $result['buckets']->firstWhere('bucket', 'general_education');
-    expect($gec['rows'])->toHaveCount(1);
-    expect($gec['rows'][0]['course']['code'])->toBe($gecCourse->code);
+    expect($result['years'][1]['year_level'])->toBe(2);
+    expect($result['years'][1]['semesters'])->toHaveCount(2);
+    expect($result['years'][1]['semesters'][0]['semester'])->toBe('FIRST');
+    expect($result['years'][1]['semesters'][1]['semester'])->toBe('SECOND');
+});
+
+test('years beyond the student\'s current year level are excluded', function () {
+    // $this->student is at year_level 2 (see beforeEach).
+    $futureCourse = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $futureCourse->id, 'year_level' => 4, 'units' => 3]);
+
+    $result = $this->service->evaluate($this->student);
+
+    expect($result['years']->pluck('year_level')->all())->not->toContain(4);
+});
+
+test('bucket_summary always lists all five buckets, even when empty, and totals their units', function () {
+    $course = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $course->id, 'year_level' => 1, 'units' => 3]);
+
+    $result = $this->service->evaluate($this->student);
+
+    expect($result['bucket_summary']->pluck('label')->all())->toBe([
+        'General Education', 'Major Subjects', 'Required Courses', 'Physical Education', 'Non-Academic Requirement',
+    ]);
+
+    $major = $result['bucket_summary']->firstWhere('label', 'Major Subjects');
+    expect($major['total_units'])->toBe(3.0);
+
+    $pe = $result['bucket_summary']->firstWhere('label', 'Physical Education');
+    expect($pe['total_units'])->toBe(0.0);
+});
+
+test('the summary accounts for required, earned, in-progress, and incomplete units', function () {
+    $completed = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    $inProgress = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    $incomplete = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+    $notTaken = Course::factory()->create(['department_id' => $this->department->id, 'bucket' => 'major_subjects']);
+
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $completed->id, 'year_level' => 1, 'units' => 3]);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $inProgress->id, 'year_level' => 1, 'units' => 3]);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $incomplete->id, 'year_level' => 1, 'units' => 3]);
+    CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $notTaken->id, 'year_level' => 1, 'units' => 3]);
+
+    $ec1 = enrollStudentInEvalCourse($this->student, $this->semester, $completed);
+    StudentGrade::factory()->create(['enrollment_course_id' => $ec1->id, 'grade' => '1.00', 'status' => 'finalized']);
+
+    $ec2 = enrollStudentInEvalCourse($this->student, $this->semester, $inProgress);
+    StudentGrade::factory()->create(['enrollment_course_id' => $ec2->id, 'grade' => '1.00', 'status' => 'submitted']);
+
+    $ec3 = enrollStudentInEvalCourse($this->student, $this->semester, $incomplete);
+    StudentGrade::factory()->create(['enrollment_course_id' => $ec3->id, 'grade' => 'INC', 'status' => 'finalized']);
+
+    $summary = $this->service->evaluate($this->student)['summary'];
+
+    expect($summary['total_units_required'])->toBe(12.0);
+    expect($summary['total_units_earned'])->toBe(3.0);
+    expect($summary['currently_enrolled_units'])->toBe(3.0);
+    expect($summary['taken_no_grade_units'])->toBe(0.0);
+    expect($summary['incomplete_units'])->toBe(3.0);
+    expect($summary['remaining_units'])->toBe(3.0);
 });
 
 test('a student with no failed, incomplete, or dropped courses is suggested regular', function () {

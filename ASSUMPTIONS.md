@@ -1217,13 +1217,40 @@ top-level module.
   same adviser/department-head/admin-or-dean visibility rules as the Progress page) rather than adding
   a parallel gate — a user who can see a student's progress checklist can generate the same data as a
   PDF.
+- **Entry point.** Reachable both from a "Download Evaluation" link on the existing Student Progress
+  page and from a dedicated "Evaluate Student" sidebar item (`GET /evaluate-student`,
+  `Progress/EvaluationIndex.tsx`) — a searchable student picker scoped identically to the Progress
+  page (own advisees for Faculty, own department for Department Head, all students for Admin/Dean) —
+  so an evaluator can reach any student's evaluation without first opening their profile.
+- **PDF layout mirrors the college's own curriculum prospectus**, not the bucket taxonomy's box-grid
+  layout that shipped first. After reviewing the college's actual "NEW BSA AGRONOMY (2024)" prospectus
+  document, the primary structure became Year Level → Semester (two side-by-side semester boxes per
+  year, Summer as a third box below when present), each listing Course No. / Descriptive Title / Lec /
+  Lab / Units / Grade — matching the prospectus's own table shape, with Grade taking the place of the
+  prospectus's Pre-requisite/Co-requisite columns (not relevant to a completed evaluation). The
+  five-bucket taxonomy from the paper evaluation form didn't disappear — it's folded into a compact
+  per-category unit recap (earned/required) inside the Summary box, rather than being the primary
+  grouping. `ProgressComputationService::checklist()` gained two more additive fields
+  (`course.lecture_hours`, `course.laboratory_hours`) to support the Lec/Lab columns.
+- **One page, using the same "long" bond paper size the prospectus itself uses** (8.5×13in /
+  612×936pt via `@page { size: 612pt 936pt; }`, not the default Letter size) — extracted directly from
+  the reference PDF's page dimensions via `pdfplumber`, which is also why the prospectus itself can fit
+  every course across all 4 years on one page despite including two more columns (prerequisites) than
+  this evaluation does. Only years 1 through the student's *current* year render (not the whole
+  4-year plan) — an evaluation covers what has actually happened, unlike the checklist that backs the
+  Progress page, which deliberately spans the whole curriculum so future terms show as "pending."
+  Verified one-page-only against the true worst case: a from-scratch reconstruction of every one of
+  the 67 real courses in the actual BSA Agronomy prospectus, all 4 years, both summer terms, every
+  course graded — see the render check below.
 - New: `App\Enums\CourseBucket`, `App\Services\StudentEvaluationService`,
   `App\Http\Controllers\Progress\StudentEvaluationController`,
-  `resources/views/pdf/student-evaluation.blade.php`, `GET /students/{student}/evaluation`. Verified
-  via `tests/Feature/StudentEvaluationTest.php` (bucket grouping, suggested-classification logic,
-  zero-database-writes, and authorization) plus a live check against real seeded course/student data
-  confirming the "Evaluation Form Section" field renders on the Course edit form and the PDF endpoint
-  returns a valid `%PDF`-prefixed response.
+  `resources/views/pdf/student-evaluation.blade.php` (+ partial
+  `pdf/partials/student-evaluation-course-table.blade.php`), `resources/js/Pages/Progress/EvaluationIndex.tsx`,
+  `GET /students/{student}/evaluation`, `GET /evaluate-student`. Verified via
+  `tests/Feature/StudentEvaluationTest.php` (year/semester grouping, current-year-level cutoff,
+  bucket-summary totals, suggested-classification logic, zero-database-writes, authorization on both
+  routes) plus a disposable render check (not committed) rebuilding the actual 67-course BSA Agronomy
+  curriculum from the college's prospectus PDF and confirming the generated PDF's page count is 1.
 
 ## Documentation Scoping
 

@@ -149,6 +149,8 @@ class ProgressComputationService
                     'code' => $cc->course->code,
                     'title' => $cc->course->title,
                     'bucket' => $cc->course->bucket?->value,
+                    'lecture_hours' => (float) $cc->course->lecture_hours,
+                    'laboratory_hours' => (float) $cc->course->laboratory_hours,
                 ],
                 'year_level' => $cc->year_level,
                 'semester' => $cc->semester->value,
@@ -285,7 +287,7 @@ class ProgressComputationService
     private function fetchCurriculumCourses(Collection $curriculumIds): Collection
     {
         return CurriculumCourse::whereIn('curriculum_id', $curriculumIds)
-            ->with('course:id,code,title,bucket')
+            ->with('course:id,code,title,bucket,lecture_hours,laboratory_hours')
             ->orderBy('year_level')
             ->orderBy('sequence_order')
             ->orderBy('id')
