@@ -349,7 +349,7 @@ function RemoteFormModal({ target, onClose }: { target: 'closed' | 'add' | Remot
     };
 
     return (
-        <Modal show={target !== 'closed'} onClose={onClose} maxWidth="md">
+        <Modal show={target !== 'closed'} onClose={onClose} maxWidth="md" variant="form">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">{isEdit ? 'Edit Remote' : 'Add Remote'}</h2>
 

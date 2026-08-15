@@ -172,7 +172,7 @@ function SubmitRequestModal({ show, onClose }: { show: boolean; onClose: () => v
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
+        <Modal show={show} onClose={onClose} maxWidth="lg" variant="form">
             <div className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">New Internal Request</h2>
                 <p className="mt-1 text-sm text-slate-600">Submitted to your Department Head (or an Admin) for review.</p>

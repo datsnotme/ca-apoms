@@ -232,7 +232,7 @@ function UploadDocumentModal({
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="2xl">
+        <Modal show={show} onClose={onClose} maxWidth="2xl" variant="form">
             <div className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Upload Document</h2>
                 <form onSubmit={submit} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">

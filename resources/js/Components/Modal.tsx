@@ -12,11 +12,21 @@ export default function Modal({
     maxWidth = '2xl',
     closeable = true,
     onClose = () => {},
+    variant = 'light',
 }: PropsWithChildren<{
     show: boolean;
     maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
     closeable?: boolean;
     onClose: CallableFunction;
+    /**
+     * 'form' is the brand-green theme for popups that collect input (Add/
+     * Register modals, the sync remote/device modals) — see .modal-form-theme
+     * in app.css for the label/text/button recoloring this activates.
+     * 'light' (default) keeps the plain white/dark panel used by
+     * confirmation dialogs and the image cropper, which have no form fields
+     * to theme.
+     */
+    variant?: 'light' | 'form';
 }>) {
     const close = () => {
         if (closeable) {
@@ -34,6 +44,8 @@ export default function Modal({
         '4xl': 'sm:max-w-4xl',
         '5xl': 'sm:max-w-5xl',
     }[maxWidth];
+
+    const panelThemeClass = variant === 'form' ? 'bg-brand-700' : 'bg-white dark:bg-gray-800';
 
     return (
         <Transition show={show} leave="duration-200">
@@ -63,9 +75,11 @@ export default function Modal({
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <DialogPanel
-                        className={`mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto sm:w-full dark:bg-gray-800 ${maxWidthClass}`}
+                        className={`mb-6 transform overflow-hidden rounded-lg shadow-xl transition-all sm:mx-auto sm:w-full ${panelThemeClass} ${maxWidthClass}`}
                     >
-                        <div className="max-h-[85vh] overflow-y-auto">{children}</div>
+                        <div className={`max-h-[85vh] overflow-y-auto ${variant === 'form' ? 'modal-form-theme' : ''}`}>
+                            {children}
+                        </div>
                     </DialogPanel>
                 </TransitionChild>
             </Dialog>

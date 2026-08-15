@@ -254,7 +254,7 @@ function RegisterDeviceModal({
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="md">
+        <Modal show={show} onClose={onClose} maxWidth="md" variant="form">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Register Device</h2>
                 <p className="mt-1 text-sm text-slate-900">
@@ -346,7 +346,7 @@ function EditDeviceModal({ device, onClose }: { device: Device | null; onClose: 
     };
 
     return (
-        <Modal show={device !== null} onClose={onClose} maxWidth="md">
+        <Modal show={device !== null} onClose={onClose} maxWidth="md" variant="form">
             <form onSubmit={submit} className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Edit Device</h2>
 

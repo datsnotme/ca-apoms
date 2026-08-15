@@ -108,7 +108,7 @@ export default function Index({ academicYears }: { academicYears: AcademicYearRo
 
             {canManage && (
                 <>
-                    <Modal show={showAddYear} onClose={() => setShowAddYear(false)} maxWidth="lg">
+                    <Modal show={showAddYear} onClose={() => setShowAddYear(false)} maxWidth="lg" variant="form">
                         <div className="p-6">
                             <h2 className="text-lg font-medium text-slate-900">Add Academic Year</h2>
                             <div className="mt-4">
@@ -124,7 +124,7 @@ export default function Index({ academicYears }: { academicYears: AcademicYearRo
                         </div>
                     </Modal>
 
-                    <Modal show={showAddSemester} onClose={() => setShowAddSemester(false)} maxWidth="lg">
+                    <Modal show={showAddSemester} onClose={() => setShowAddSemester(false)} maxWidth="lg" variant="form">
                         <div className="p-6">
                             <h2 className="text-lg font-medium text-slate-900">Add Semester</h2>
                             <div className="mt-4">

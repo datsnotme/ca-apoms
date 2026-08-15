@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/**
+ * Brand-green theme for "form" modals (Modal variant="form") — every
+ * Add/Register popup and the Sync remote/device popups. Recolors the shared
+ * InputLabel/InputError text and the hardcoded heading/description text used
+ * across every Form.tsx and modal wrapper, without editing each of those
+ * files individually: they all draw from the same small set of slate/gray/
+ * red utility tokens, so overriding those tokens by class name inside
+ * .modal-form-theme covers every instance at once. Scoped to this class only
+ * — full-page Edit forms using the same shared components are unaffected.
+ */
+.modal-form-theme [class*="text-slate-900"]:not(button),
+.modal-form-theme [class*="text-slate-700"]:not(button),
+.modal-form-theme [class*="text-slate-600"]:not(button),
+.modal-form-theme [class*="text-gray-700"]:not(button),
+.modal-form-theme [class*="text-gray-300"]:not(button) {
+    color: #ffffff !important;
+}
+
+.modal-form-theme [class*="text-red-600"],
+.modal-form-theme [class*="text-red-400"] {
+    color: #fca5a5 !important;
+}
+
+/* The submit button (PrimaryButton's bg-brand-700) would disappear against
+   the now-green panel — swap it to the app's existing gold accent color. */
+.modal-form-theme .bg-brand-700 {
+    background-color: #b06d13 !important;
+}
+
+.modal-form-theme .hover\:bg-brand-800:hover,
+.modal-form-theme .focus\:bg-brand-800:focus {
+    background-color: #8c5013 !important;
+}
+
+.modal-form-theme .active\:bg-brand-900:active {
+    background-color: #734215 !important;
+}

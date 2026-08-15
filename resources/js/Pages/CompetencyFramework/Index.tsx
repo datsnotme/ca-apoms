@@ -88,7 +88,7 @@ export default function Index({ categories, canManage }: { categories: CategoryR
             </Card>
 
             {canManage && (
-                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="lg">
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="lg" variant="form">
                     <div className="p-6">
                         <h2 className="text-lg font-medium text-slate-900">Add Competency Category</h2>
                         <div className="mt-4">

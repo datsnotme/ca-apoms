@@ -274,7 +274,7 @@ export default function Index({
             </Card>
 
             {canManage && departments && (
-                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="4xl">
+                <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="4xl" variant="form">
                     <div className="p-6">
                         <h2 className="text-lg font-medium text-slate-900">Register Student</h2>
                         <div className="mt-4">

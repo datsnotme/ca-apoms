@@ -214,7 +214,7 @@ function NewEnrollmentModal({
     };
 
     return (
-        <Modal show={show} onClose={onClose} maxWidth="lg">
+        <Modal show={show} onClose={onClose} maxWidth="lg" variant="form">
             <div className="p-6">
                 <h2 className="text-lg font-medium text-slate-900">Enroll a Student</h2>
                 <p className="mt-1 text-sm text-slate-600">Creates the semester-level enrollment; courses are added afterward.</p>

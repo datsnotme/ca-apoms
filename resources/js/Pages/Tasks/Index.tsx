@@ -173,7 +173,7 @@ export default function Index({
                 <Pagination links={tasks.links} from={tasks.from} to={tasks.to} total={tasks.total} />
             </Card>
 
-            <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl">
+            <Modal show={showCreate} onClose={() => setShowCreate(false)} maxWidth="2xl" variant="form">
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-slate-900">Add Task</h2>
                     <div className="mt-4">
