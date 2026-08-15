@@ -1170,6 +1170,61 @@ size of the codebase):
 student department-forcing fix), Pint clean, `tsc --noEmit` clean, `npm run build` clean,
 `migrate:fresh --seed` clean.
 
+## Student Evaluation (Individual Evaluation Form)
+
+Automates the manual process of downloading a student's grade history and hand-copying it onto a
+printed Individual Student Evaluation form, per-student, per-semester — distinct from the existing
+Graduating Evaluation feature, which is scoped to `GraduationCandidate` rows (students nominated for
+graduation). This feature applies to **any** enrolled student, 1st through 4th year, at any point in
+their academic history, and is reachable from the existing Student Progress page rather than a new
+top-level module.
+
+- **Course bucket taxonomy.** The paper form groups courses into five sections (General Education,
+  Major Subjects, Required Courses, Physical Education, Non-Academic Requirement) that don't map
+  onto the existing `CourseCategory` enum (a subject-domain classification — Crop Science, Animal
+  Science, etc.). Added a new, independent `bucket` column on `courses` (`App\Enums\CourseBucket`),
+  global per-course rather than per-curriculum — in practice a course's form section doesn't vary by
+  which program's curriculum it appears in (a GEC course is always General Education). Backfilled
+  from the existing `category` column at migration time (`general_education` → General Education,
+  `nstp_pe` → Physical Education, `research`/`thesis`/`practicum`/`internship` → Required Courses);
+  every other existing course defaults to Major Subjects, the column's DB default, editable per-course
+  via the Course edit form's new "Evaluation Form Section" select. New courses must set a bucket
+  (`CourseRequest` validation), same as they must set a category today.
+- **Reuses the existing progress-computation engine.** `StudentEvaluationService` wraps
+  `ProgressComputationService::checklist()` — the same cumulative, whole-curriculum checklist already
+  powering the Progress page (not a per-semester snapshot; the paper form itself is cumulative-to-date,
+  not filtered to one term) — and groups its rows by `course.bucket` instead of building a second,
+  duplicate data pipeline. `ProgressComputationService::checklist()` gained one additive field
+  (`course.bucket`) to support this; no existing consumer's output shape changed otherwise.
+- **Suggested classification is a hint, never a write.** The paper process's "is this student regular
+  or irregular" judgment is surfaced as a computed `suggested_classification` (`regular` unless the
+  checklist has any failed/incomplete/dropped/deficiency row, in which case `irregular`) shown on the
+  generated PDF for the evaluator to read — it is **not** written to the student record. Generating an
+  evaluation makes zero database writes; the student's actual `classification` field is still set
+  manually via the existing Student edit form, exactly as today. This was a deliberate scope choice
+  (see the three-way tradeoff discussion before implementation): auto-classifying would require
+  encoding judgment calls (e.g. how many terms overdue before "irregular" actually applies) that
+  belong to the evaluator, not the system.
+- **Non-academic requirements** (Work Experience, Tree Planting, CVAC) have no tracked data anywhere
+  in the system — the sample paper form itself shows them blank even on a completed evaluation. The
+  generated PDF reproduces them as blank fillable rows, matching the current manual process, rather
+  than inventing a new tracking mechanism for data nobody asked to persist.
+- **PDF only**, reusing the `barryvdh/laravel-dompdf` pattern already established for the Graduation
+  Evaluation Report (`Pdf::loadView(...)->stream()`) — no new dependency. DOCX was considered and
+  deliberately not built: it would require adding `phpoffice/phpword` and maintaining a second
+  template in parallel for a workflow (print, evaluate, file) the PDF already serves.
+- **Authorization** reuses `StudentPolicy::viewProgress()` as-is (same `progress.view` permission,
+  same adviser/department-head/admin-or-dean visibility rules as the Progress page) rather than adding
+  a parallel gate — a user who can see a student's progress checklist can generate the same data as a
+  PDF.
+- New: `App\Enums\CourseBucket`, `App\Services\StudentEvaluationService`,
+  `App\Http\Controllers\Progress\StudentEvaluationController`,
+  `resources/views/pdf/student-evaluation.blade.php`, `GET /students/{student}/evaluation`. Verified
+  via `tests/Feature/StudentEvaluationTest.php` (bucket grouping, suggested-classification logic,
+  zero-database-writes, and authorization) plus a live check against real seeded course/student data
+  confirming the "Evaluation Form Section" field renders on the Course edit form and the PDF endpoint
+  returns a valid `%PDF`-prefixed response.
+
 ## Documentation Scoping
 
 - `DEPLOYMENT.md`, `BACKUP_RESTORE.md`, `USER_GUIDE.md`, and `API_DOCUMENTATION.md` are

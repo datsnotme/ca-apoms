@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Academic;
 
+use App\Enums\CourseBucket;
 use App\Enums\CourseCategory;
 use App\Enums\RoleName;
 use App\Enums\SemesterTerm;
@@ -49,6 +50,7 @@ class CourseRequest extends FormRequest
             'lecture_hours' => ['nullable', 'numeric', 'min:0', 'max:20'],
             'laboratory_hours' => ['nullable', 'numeric', 'min:0', 'max:20'],
             'category' => ['required', Rule::enum(CourseCategory::class)],
+            'bucket' => ['required', Rule::enum(CourseBucket::class)],
             'recommended_year_level' => ['nullable', 'integer', 'min:1', 'max:6'],
             'recommended_semester' => ['nullable', Rule::enum(SemesterTerm::class)],
             'is_active' => ['boolean'],

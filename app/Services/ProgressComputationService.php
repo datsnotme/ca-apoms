@@ -144,7 +144,12 @@ class ProgressComputationService
 
             return [
                 'curriculum_course_id' => $cc->id,
-                'course' => ['id' => $cc->course->id, 'code' => $cc->course->code, 'title' => $cc->course->title],
+                'course' => [
+                    'id' => $cc->course->id,
+                    'code' => $cc->course->code,
+                    'title' => $cc->course->title,
+                    'bucket' => $cc->course->bucket?->value,
+                ],
                 'year_level' => $cc->year_level,
                 'semester' => $cc->semester->value,
                 'is_required' => $cc->is_required,
@@ -280,7 +285,7 @@ class ProgressComputationService
     private function fetchCurriculumCourses(Collection $curriculumIds): Collection
     {
         return CurriculumCourse::whereIn('curriculum_id', $curriculumIds)
-            ->with('course:id,code,title')
+            ->with('course:id,code,title,bucket')
             ->orderBy('year_level')
             ->orderBy('sequence_order')
             ->orderBy('id')

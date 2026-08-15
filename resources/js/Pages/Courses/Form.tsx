@@ -28,6 +28,14 @@ const CATEGORIES = [
     ['nstp_pe', 'NSTP / PE'],
 ] as const;
 
+const BUCKETS = [
+    ['general_education', 'General Education'],
+    ['major_subjects', 'Major Subjects'],
+    ['required_courses', 'Required Courses'],
+    ['physical_education', 'Physical Education'],
+    ['non_academic_requirement', 'Non-Academic Requirement'],
+] as const;
+
 interface CourseFormValues {
     department_id: string;
     code: string;
@@ -37,6 +45,7 @@ interface CourseFormValues {
     lecture_hours: string;
     laboratory_hours: string;
     category: string;
+    bucket: string;
     recommended_year_level: string;
     recommended_semester: string;
     is_active: boolean;
@@ -74,6 +83,7 @@ export default function CourseForm({
         lecture_hours: initialValues.lecture_hours ?? '3',
         laboratory_hours: initialValues.laboratory_hours ?? '0',
         category: initialValues.category ?? CATEGORIES[0][0],
+        bucket: initialValues.bucket ?? BUCKETS[1][0],
         recommended_year_level: initialValues.recommended_year_level ?? '',
         recommended_semester: initialValues.recommended_semester ?? '',
         is_active: initialValues.is_active ?? true,
@@ -182,6 +192,23 @@ export default function CourseForm({
                     ))}
                 </select>
                 <InputError message={errors.category} className="mt-2" />
+            </div>
+
+            <div>
+                <InputLabel htmlFor="bucket" value="Evaluation Form Section" />
+                <select
+                    id="bucket"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-600 focus:ring-brand-600"
+                    value={data.bucket}
+                    onChange={(e) => setData('bucket', e.target.value)}
+                >
+                    {BUCKETS.map(([value, label]) => (
+                        <option key={value} value={value}>
+                            {label}
+                        </option>
+                    ))}
+                </select>
+                <InputError message={errors.bucket} className="mt-2" />
             </div>
 
             <div>

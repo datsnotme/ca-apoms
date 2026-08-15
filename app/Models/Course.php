@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CourseBucket;
 use App\Enums\CourseCategory;
 use App\Enums\RoleName;
 use App\Enums\SemesterTerm;
@@ -21,7 +22,7 @@ class Course extends Model
 
     protected $fillable = [
         'department_id', 'code', 'title', 'description', 'units', 'lecture_hours',
-        'laboratory_hours', 'category', 'recommended_year_level', 'recommended_semester',
+        'laboratory_hours', 'category', 'bucket', 'recommended_year_level', 'recommended_semester',
         'is_active',
     ];
 
@@ -29,6 +30,7 @@ class Course extends Model
     {
         return [
             'category' => CourseCategory::class,
+            'bucket' => CourseBucket::class,
             'recommended_semester' => SemesterTerm::class,
             'is_active' => 'boolean',
             'units' => 'decimal:2',

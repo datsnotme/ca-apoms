@@ -16,6 +16,7 @@ test('an admin can create a course', function () {
         'title' => 'Introduction to Crop Science',
         'units' => 3,
         'category' => 'crop_science',
+        'bucket' => 'major_subjects',
         'is_active' => true,
     ]);
 
@@ -32,6 +33,7 @@ test('course codes must be unique', function () {
         'title' => 'Duplicate',
         'units' => 3,
         'category' => 'crop_science',
+        'bucket' => 'major_subjects',
     ]);
 
     $response->assertSessionHasErrors('code');
@@ -47,6 +49,7 @@ test('prerequisites and corequisites are saved when creating a course', function
         'title' => 'Advanced Crop Science',
         'units' => 3,
         'category' => 'crop_science',
+        'bucket' => 'major_subjects',
         'prerequisite_ids' => [$prereq->id],
         'corequisite_ids' => [$coreq->id],
     ]);

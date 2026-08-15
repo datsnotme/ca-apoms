@@ -64,6 +64,7 @@ use App\Http\Controllers\Operations\MeetingController;
 use App\Http\Controllers\Operations\TaskController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Progress\AtRiskController;
+use App\Http\Controllers\Progress\StudentEvaluationController;
 use App\Http\Controllers\Progress\StudentProgressController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Research\ResearchMemberController;
@@ -152,6 +153,7 @@ Route::middleware('auth')->group(function () {
     Route::get('imports/batches/{batch}/errors', [ImportController::class, 'errors'])->name('imports.errors');
 
     Route::get('students/{student}/progress', [StudentProgressController::class, 'show'])->name('students.progress.show');
+    Route::get('students/{student}/evaluation', [StudentEvaluationController::class, 'show'])->name('students.evaluation.show');
 
     Route::get('academic-progress', [AtRiskController::class, 'index'])->name('academic-progress.index');
     Route::patch('students/{student}/alerts/{alert}/acknowledge', [AtRiskController::class, 'acknowledge'])

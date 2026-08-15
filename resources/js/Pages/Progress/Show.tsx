@@ -128,6 +128,14 @@ export default function Show({
                         description={`${student.student_number} · ${student.program?.name ?? '—'} · ${student.curriculum?.name ?? 'No curriculum assigned'}`}
                         actions={
                             <div className="flex items-center gap-4 print:hidden">
+                                <a
+                                    href={route('students.evaluation.show', student.id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-brand-700 hover:text-brand-900"
+                                >
+                                    Download Evaluation
+                                </a>
                                 <button
                                     type="button"
                                     onClick={() => window.print()}

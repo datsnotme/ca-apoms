@@ -60,7 +60,7 @@ class CourseController extends Controller
             'course' => [
                 ...$course->only([
                     'id', 'department_id', 'code', 'title', 'description', 'units',
-                    'lecture_hours', 'laboratory_hours', 'category', 'recommended_year_level',
+                    'lecture_hours', 'laboratory_hours', 'category', 'bucket', 'recommended_year_level',
                     'recommended_semester', 'is_active',
                 ]),
                 'prerequisite_ids' => $course->prerequisites()->pluck('courses.id'),
