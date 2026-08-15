@@ -1251,6 +1251,22 @@ top-level module.
   bucket-summary totals, suggested-classification logic, zero-database-writes, authorization on both
   routes) plus a disposable render check (not committed) rebuilding the actual 67-course BSA Agronomy
   curriculum from the college's prospectus PDF and confirming the generated PDF's page count is 1.
+- **Grade-accuracy audit and fix.** Auditing the grade shown per subject against what faculty actually
+  entered (per the request to verify accuracy) surfaced a real, pre-existing bug in
+  `ProgressComputationService::checklist()`, shared by the Progress page, GWA, and this evaluation
+  alike: when a student had **more than one officially-passing attempt** at the same course (e.g. a
+  voluntary retake for grade improvement — `GradeService::encode()` writes one `student_grades` row
+  per `EnrollmentCourse`, so a retake in a later semester is a separate row), the "winning" attempt was
+  selected via `Collection::first()` over an unsorted list — picking whichever passing attempt happened
+  to appear first in DB return order, not the most recent one. Every *other* branch of the status logic
+  (`resolveStatus()`) already resolves ties by recency (`sortByDesc('enrollment_course_id')`); the
+  passing-attempt branch was the one inconsistent path. Fixed by sorting attempts by recency once and
+  picking the latest passing one (falling back to the latest attempt overall, unchanged), so the
+  grade/GWA the system reports for a retaken course always reflects the faculty's most recent entry.
+  Course/grade association itself was verified sound — `EnrollmentCourse belongsTo ClassSection belongsTo
+  Course`, `StudentGrade hasOne-of EnrollmentCourse`, one grade row per attempt, grouped by
+  `classSection->course_id` — no cross-subject mixing was found. Regression test added to
+  `tests/Feature/ProgressComputationTest.php`; full 490-test suite re-verified green.
 
 ## Documentation Scoping
 

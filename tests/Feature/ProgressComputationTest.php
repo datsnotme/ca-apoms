@@ -105,6 +105,25 @@ test('a retake that later passes shows completed, not failed', function () {
     expect($row['is_deficiency'])->toBeFalse();
 });
 
+test('a retake for grade improvement shows the latest passing grade, not the first one that happened to pass', function () {
+    $course = Course::factory()->create(['department_id' => $this->department->id]);
+    $cc = CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $course->id, 'year_level' => 1, 'units' => 3]);
+
+    $firstAttempt = enrollStudentInCourse($this->student, $this->semester, $course, 'A');
+    StudentGrade::factory()->create(['enrollment_course_id' => $firstAttempt->id, 'grade' => '2.00', 'status' => 'finalized']);
+
+    $laterSemester = Semester::factory()->create();
+    $retake = enrollStudentInCourse($this->student, $laterSemester, $course, 'A');
+    StudentGrade::factory()->create(['enrollment_course_id' => $retake->id, 'grade' => '1.00', 'status' => 'finalized']);
+
+    $row = $this->service->checklist($this->student)->firstWhere('curriculum_course_id', $cc->id);
+
+    expect($row['status'])->toBe('completed');
+    expect($row['grade'])->toBe('1.00');
+    expect($row['numeric_equivalent'])->toBe(1.0);
+    expect($this->service->gwa($this->student))->toBe(1.0);
+});
+
 test('syncDeficiencies auto-resolves a deficiency once a later retake passes', function () {
     $course = Course::factory()->create(['department_id' => $this->department->id]);
     $cc = CurriculumCourse::factory()->create(['curriculum_id' => $this->curriculum->id, 'course_id' => $course->id, 'year_level' => 1, 'units' => 3]);

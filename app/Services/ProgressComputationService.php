@@ -135,8 +135,15 @@ class ProgressComputationService
                 ? CourseChecklistStatus::Pending
                 : $rawStatus;
 
-            $winningAttempt = $attempts->first(fn ($a) => $a['is_official'] && $a['scale_value']?->is_passing)
-                ?? $attempts->sortByDesc('enrollment_course_id')->first();
+            // Most recent attempt wins, not merely the first one found to
+            // pass — a student who retakes an already-passed course for a
+            // better grade (or whose attempts simply weren't returned in
+            // chronological order) must see the actual latest grade the
+            // faculty entered, matching resolveStatus()'s own
+            // "latest attempt" rule for every other outcome below.
+            $attemptsByRecency = $attempts->sortByDesc('enrollment_course_id');
+            $winningAttempt = $attemptsByRecency->first(fn ($a) => $a['is_official'] && $a['scale_value']?->is_passing)
+                ?? $attemptsByRecency->first();
 
             $isDeficiency = $cc->is_required
                 && $isOverdue
