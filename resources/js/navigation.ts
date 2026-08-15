@@ -37,6 +37,7 @@ export const NAVIGATION: NavItem[] = [
     { label: 'Grades', routeName: 'grades.index', permission: 'grades.view' },
     { label: 'Data Import', routeName: 'imports.index' },
     { label: 'Advising', routeName: 'advising.index', permission: 'advising.view' },
+    { label: 'Evaluate Student', routeName: 'students.evaluation.index', permission: 'progress.view' },
     { label: 'Graduating Evaluation', routeName: 'graduation-candidates.index', permission: 'graduation.view' },
     { label: 'Faculty Profiles', routeName: 'faculty-profiles.index', permission: 'faculty-profiles.view' },
     { label: 'Faculty Workload', routeName: 'faculty-workload.index', permission: 'faculty-profiles.view' },

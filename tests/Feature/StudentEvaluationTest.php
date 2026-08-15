@@ -116,3 +116,32 @@ test('admin can download the evaluation pdf for any student', function () {
 
     $this->actingAs($admin)->get("/students/{$this->student->id}/evaluation")->assertOk();
 });
+
+test('the evaluate-student index lists only students within the users scope', function () {
+    $adviser = userWithRole(RoleName::Faculty->value, $this->department);
+    $otherFaculty = userWithRole(RoleName::Faculty->value, $this->department);
+    $this->student->update(['adviser_id' => $adviser->id]);
+
+    $otherStudent = Student::factory()->create([
+        'department_id' => $this->department->id,
+        'adviser_id' => $otherFaculty->id,
+    ]);
+
+    $response = $this->actingAs($adviser)->get('/evaluate-student');
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('Progress/EvaluationIndex')
+        ->has('students.data', 1)
+        ->where('students.data.0.id', $this->student->id));
+});
+
+test('a department head sees every student in their department on the evaluate-student index', function () {
+    $head = userWithRole(RoleName::DepartmentHead->value, $this->department);
+    $otherDepartment = Department::factory()->create();
+    Student::factory()->create(['department_id' => $otherDepartment->id]);
+
+    $response = $this->actingAs($head)->get('/evaluate-student');
+
+    $response->assertInertia(fn ($page) => $page->has('students.data', 1));
+});
