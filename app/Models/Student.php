@@ -205,6 +205,11 @@ class Student extends Model
         return $this->hasMany(GraduationCandidate::class)->latest('nominated_at');
     }
 
+    public function historicalGrades(): HasMany
+    {
+        return $this->hasMany(StudentHistoricalGrade::class)->orderBy('id');
+    }
+
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
         if ($user->hasRole([RoleName::Administrator->value, RoleName::Dean->value])) {

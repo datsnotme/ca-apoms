@@ -88,9 +88,28 @@ class StudentEvaluationService
         $currentlyEnrolledUnits = (float) $checklist->where('status', 'in_progress')->sum('units');
         $incompleteUnits = (float) $checklist->where('status', 'incomplete')->sum('units');
 
+        // Imported prior-program record (e.g. a shiftee's coursework under
+        // a program the student is no longer in) — grouped by the
+        // free-text academic year/semester label the evaluator entered at
+        // import time, in upload order. Deliberately excluded from every
+        // stat below (GWA, completion percentage, bucket/summary totals):
+        // it's display-only context, not part of the current curriculum's
+        // progress tracking. See ASSUMPTIONS.md and StudentHistoricalGrade.
+        $priorAcademicRecord = $student->historicalGrades
+            ->groupBy(fn ($row) => $row->academic_year_label.'|'.$row->semester_label)
+            ->map(fn ($rows) => [
+                'academic_year_label' => $rows->first()->academic_year_label,
+                'semester_label' => $rows->first()->semester_label,
+                'program_label' => $rows->first()->program_label,
+                'rows' => $rows->values(),
+                'total_units' => (float) $rows->sum('units'),
+            ])
+            ->values();
+
         return [
             'years' => $years,
             'bucket_summary' => $bucketSummary,
+            'prior_academic_record' => $priorAcademicRecord,
             'gwa' => $this->progress->gwa($student),
             'completion_percentage' => $this->progress->completionPercentage($student),
             'flagged_courses' => $flaggedRows,

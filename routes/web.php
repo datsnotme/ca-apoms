@@ -65,6 +65,7 @@ use App\Http\Controllers\Operations\TaskController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Progress\AtRiskController;
 use App\Http\Controllers\Progress\StudentEvaluationController;
+use App\Http\Controllers\Progress\StudentHistoricalGradeController;
 use App\Http\Controllers\Progress\StudentProgressController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Research\ResearchMemberController;
@@ -155,6 +156,8 @@ Route::middleware('auth')->group(function () {
     Route::get('students/{student}/progress', [StudentProgressController::class, 'show'])->name('students.progress.show');
     Route::get('evaluate-student', [StudentEvaluationController::class, 'index'])->name('students.evaluation.index');
     Route::get('students/{student}/evaluation', [StudentEvaluationController::class, 'show'])->name('students.evaluation.show');
+    Route::get('students/{student}/historical-grades/template', [StudentHistoricalGradeController::class, 'template'])->name('students.historical-grades.template');
+    Route::post('students/{student}/historical-grades', [StudentHistoricalGradeController::class, 'store'])->name('students.historical-grades.store');
 
     Route::get('academic-progress', [AtRiskController::class, 'index'])->name('academic-progress.index');
     Route::patch('students/{student}/alerts/{alert}/acknowledge', [AtRiskController::class, 'acknowledge'])

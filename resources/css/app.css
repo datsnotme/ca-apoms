@@ -39,3 +39,16 @@
 .modal-form-theme .active\:bg-brand-900:active {
     background-color: #734215 !important;
 }
+
+/* A plain text-brand-700 link (e.g. "Download Template") is normally the
+   same green as ordinary page backgrounds, but inside this modal the panel
+   itself is that same green — the link would be invisible. Recolor to the
+   gold accent, consistent with the button treatment above. */
+.modal-form-theme a[class*="text-brand-700"] {
+    color: #eebf52 !important;
+}
+
+.modal-form-theme a[class*="text-brand-700"]:hover,
+.modal-form-theme a[class*="text-brand-900"]:hover {
+    color: #f4d98d !important;
+}

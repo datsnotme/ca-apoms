@@ -58,7 +58,7 @@ class StudentEvaluationController extends Controller
     {
         $this->authorize('viewProgress', $student);
 
-        $student->load(['department:id,name', 'program:id,name', 'curriculum:id,name', 'yearLevel:id,level,label']);
+        $student->load(['department:id,name', 'program:id,name', 'curriculum:id,name', 'yearLevel:id,level,label', 'historicalGrades']);
 
         $data = $this->evaluation->evaluate($student);
 
@@ -67,6 +67,7 @@ class StudentEvaluationController extends Controller
             'college' => College::query()->first(),
             'years' => $data['years'],
             'bucketSummary' => $data['bucket_summary'],
+            'priorAcademicRecord' => $data['prior_academic_record'],
             'gwa' => $data['gwa'],
             'completionPercentage' => $data['completion_percentage'],
             'flaggedCourses' => $data['flagged_courses'],

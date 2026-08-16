@@ -132,6 +132,33 @@
         @endif
     @endforeach
 
+    @if ($priorAcademicRecord->isNotEmpty())
+        <div class="year-header">Prior Academic Record (Imported)</div>
+
+        @foreach ($priorAcademicRecord->chunk(2) as $pair)
+            <table class="grid-row">
+                <tr>
+                    @foreach ($pair as $termGroup)
+                        <td style="width: {{ round(100 / max($pair->count(), 1), 2) }}%;">
+                            <div class="box">
+                                <div class="box-title">
+                                    {{ $termGroup['semester_label'] }} {{ $termGroup['academic_year_label'] }}
+                                    @if ($termGroup['program_label'])
+                                        — {{ $termGroup['program_label'] }}
+                                    @endif
+                                </div>
+                                @include('pdf.partials.student-evaluation-prior-record-table', [
+                                    'rows' => $termGroup['rows'],
+                                    'totalUnits' => $termGroup['total_units'],
+                                ])
+                            </div>
+                        </td>
+                    @endforeach
+                </tr>
+            </table>
+        @endforeach
+    @endif
+
     <table class="grid-row">
         <tr>
             <td style="width: 50%;">

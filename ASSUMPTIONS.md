@@ -1267,6 +1267,46 @@ top-level module.
   Course`, `StudentGrade hasOne-of EnrollmentCourse`, one grade row per attempt, grouped by
   `classSection->course_id` — no cross-subject mixing was found. Regression test added to
   `tests/Feature/ProgressComputationTest.php`; full 490-test suite re-verified green.
+- **Historical grade import (prior-program record).** A student who shifted or transferred programs
+  (e.g. the BS Biology → BS Agronomy scenario in the sample evaluation forms this feature was built
+  from) has old coursework that isn't in the live grading system at all — no `Course`, `ClassSection`,
+  or `EnrollmentCourse` exists for a program the student is no longer in, and never will. Rather than
+  force that history through the full class-section/enrollment machinery (or worse, invent placeholder
+  curriculum data for a defunct program), it's imported as a **separate, evaluation-only record**:
+  `student_historical_grades` (model `StudentHistoricalGrade`) — course code/title, hours, units, grade,
+  and free-text academic-year/semester/program labels, one row per prior course, tied only to the
+  `Student`. It is never written into `student_grades`/`enrollment_courses`, never goes through
+  `GradeService`'s draft→submit→review→finalize state machine, and is deliberately excluded from every
+  live stat (`gwa()`, `completionPercentage()`, the bucket/summary totals) — it exists purely to print
+  on the Student Evaluation PDF as a "Prior Academic Record" section, grouped by academic year/semester
+  in upload order, after the current curriculum's year/semester grid.
+  - **Upload is per-student, not a generic batch import.** A new "Import Historical Grades" button on
+    the Evaluate Student page (modal, reusing the app's established green form-modal styling) uploads a
+    spreadsheet (xlsx/xls/csv) for the ONE student already selected — unlike the existing generic
+    `ImportRunner`/`RowImporter` pipeline (Students/Courses/Enrollment/Grades imports under Data
+    Import), this never has to resolve "which student does this row belong to" from the file, so
+    `StudentHistoricalGradeImportService` validates every row against that one target student and
+    rejects the **entire upload** (no partial writes) if any row's `student_number` or `student_name`
+    doesn't match — a wrong-file upload must never partially land on the wrong student's record. Name
+    matching is intentionally forgiving on format (the paper record uses "SURNAME, FIRST M.", the app's
+    own convention is "First Middle Surname") — it normalizes and checks that both the surname and
+    first name appear in the given string, not an exact format match, while still being a real gate
+    that only passes when both parts are actually present.
+  - **Re-uploading replaces, not appends** — the source document is always the student's complete prior
+    record, not an incremental delta, so a corrected re-upload can't leave stale duplicate rows behind.
+  - **Permission**: reuses the existing `grades.import` permission (same as the Data Import module's
+    Grades type) rather than adding a new one — this is the same category of operation.
+  - New: migration + model `StudentHistoricalGrade`, `App\Services\Import\StudentHistoricalGradeImportService`,
+    `App\Http\Controllers\Progress\StudentHistoricalGradeController`, template/upload routes under
+    `students/{student}/historical-grades/*`, `resources/views/pdf/partials/student-evaluation-prior-record-table.blade.php`.
+    A real bug was caught during manual verification and fixed here too: the modal's "Download Template"
+    link used the same `text-brand-700` green as its normal page styling, which is the *exact* color of
+    the form-modal's own background — the link was genuinely invisible. Added a `.modal-form-theme a[class*="text-brand-700"]`
+    override in `resources/css/app.css` recoloring it to the gold accent, matching the button treatment
+    already established there. Verified via `tests/Feature/StudentHistoricalGradeImportTest.php` (import
+    success, replace-on-reupload, number-mismatch rejection, name-mismatch rejection, forgiving-format
+    name match, permission denial, template download, evaluation-service integration) plus a manual
+    browser check confirming the fixed link is now readable. Full 498-test suite green.
 
 ## Documentation Scoping
 
