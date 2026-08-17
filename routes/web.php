@@ -43,6 +43,7 @@ use App\Http\Controllers\Graduation\GraduationDecisionController;
 use App\Http\Controllers\Graduation\GraduationRecommendationController;
 use App\Http\Controllers\Graduation\GraduationReportController;
 use App\Http\Controllers\Graduation\GraduationRequirementTemplateController;
+use App\Http\Controllers\Graduation\LatinHonorsController;
 use App\Http\Controllers\Graduation\StudentGraduationRequirementController;
 use App\Http\Controllers\Import\ImportController;
 use App\Http\Controllers\NotificationController;
@@ -190,6 +191,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('graduation-candidates/report/batch', [GraduationReportController::class, 'batch'])
         ->name('graduation-candidates.report.batch');
+    Route::get('latin-honors', [LatinHonorsController::class, 'index'])->name('latin-honors.index');
 
     Route::resource('graduation-candidates', GraduationCandidateController::class)->only(['index', 'store', 'show', 'destroy']);
     Route::put('graduation-candidates/{graduationCandidate}/requirements/{requirement}', [StudentGraduationRequirementController::class, 'update'])

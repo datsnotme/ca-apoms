@@ -1308,6 +1308,46 @@ top-level module.
     name match, permission denial, template download, evaluation-service integration) plus a manual
     browser check confirming the fixed link is now readable. Full 498-test suite green.
 
+## Latin Honors Prospects
+
+Surfaces students who currently qualify as Latin Honors candidates — active, 100% curriculum
+completion, zero unresolved academic deficiencies, and a GWA between 1.00 and 1.75 inclusive.
+Deliberately **not** built as an extension of the existing `GraduationCandidate` pipeline:
+
+- **Scans all graduation-eligible students directly**, not just students already nominated as a
+  `GraduationCandidate` — the same "applies broadly, not scoped to a nomination workflow" choice
+  already made for the Student Evaluation feature (see above), for the same reason: a student
+  shouldn't need to already be in the graduation pipeline for the system to notice they're on
+  track for honors.
+- **"No issues" reuses `GraduationCandidateService::identifyEligibleStudents()`'s own bar exactly**
+  (100% completion, zero unresolved `academic_deficiencies`) rather than a stricter "never failed
+  anything, ever, even if later fixed by retake" check. The stricter version isn't a corner cut so
+  much as a signal that doesn't exist anywhere in the app yet — `ProgressComputationService::checklist()`
+  only surfaces each course's current winning attempt (most recent official passing grade, or most
+  recent attempt otherwise; see the retake-accuracy fix above), never full per-attempt history, so a
+  student who once failed a course but passed it on retake has no trace of that failure left in
+  their live record. Building the stricter check would mean exposing `groupAttemptsByCourse()`'s
+  currently-private raw attempt data and deciding a genuinely new academic-policy question (does a
+  fixed-via-retake failure disqualify honors at this college?) that wasn't part of this request.
+- **Computed live, never persisted, never an automatic award** — consistent with `suggested_classification`
+  elsewhere in this app and with `GraduationCandidateService`'s own docblock ("there is no separate
+  'is eligible' flag stored anywhere"). A registrar or honors committee still confirms the actual
+  distinction manually; this page is a worklist, not a decision.
+- **New dedicated sidebar page** (`Latin Honors Prospects`, next to `Graduating Evaluation`) rather
+  than a filter bolted onto the existing `GraduationCandidates/Index.tsx` — matches this codebase's
+  established pattern of one page per distinct workflow (see `Evaluate Student` alongside
+  `Graduating Evaluation`).
+- Student visibility reuses `Student::scopeVisibleTo()` (Admin/Dean see all; everyone else sees only
+  their own department) rather than `GraduationCandidate::scopeVisibleTo()`'s evaluator-assignment
+  scoping, since a Latin Honors prospect may not have any `GraduationCandidate` row (and therefore no
+  assigned competency evaluators) at all.
+- New: `App\Services\LatinHonorsService`, `App\Http\Controllers\Graduation\LatinHonorsController`,
+  `GET /latin-honors`, `resources/js/Pages/GraduationCandidates/LatinHonors.tsx`. Verified via
+  `tests/Feature/LatinHonorsTest.php` (qualifying GWA, GWA-above-cutoff exclusion,
+  unresolved-deficiency exclusion, incomplete-curriculum exclusion, department-scoped visibility,
+  permission gate) plus a manual browser check confirming the sidebar entry and empty-state render
+  correctly against the real dev database.
+
 ## Documentation Scoping
 
 - `DEPLOYMENT.md`, `BACKUP_RESTORE.md`, `USER_GUIDE.md`, and `API_DOCUMENTATION.md` are
