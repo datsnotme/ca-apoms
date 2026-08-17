@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\LatinHonorsTier;
 use App\Enums\RoleName;
 use App\Models\AcademicDeficiency;
 use App\Models\ClassSection;
@@ -61,6 +62,17 @@ test('a student with a qualifying GWA, full completion, and no deficiencies is a
     expect($prospects->pluck('student.id'))->toContain($student->id);
     $row = $prospects->firstWhere('student.id', $student->id);
     expect($row['gwa'])->toBe(1.25);
+    expect($row['tier'])->toBe(LatinHonorsTier::MagnaCumLaude);
+});
+
+test('LatinHonorsTier resolves the standard boundaries correctly', function () {
+    expect(LatinHonorsTier::forGwa(1.00))->toBe(LatinHonorsTier::SummaCumLaude);
+    expect(LatinHonorsTier::forGwa(1.20))->toBe(LatinHonorsTier::SummaCumLaude);
+    expect(LatinHonorsTier::forGwa(1.21))->toBe(LatinHonorsTier::MagnaCumLaude);
+    expect(LatinHonorsTier::forGwa(1.45))->toBe(LatinHonorsTier::MagnaCumLaude);
+    expect(LatinHonorsTier::forGwa(1.46))->toBe(LatinHonorsTier::CumLaude);
+    expect(LatinHonorsTier::forGwa(1.75))->toBe(LatinHonorsTier::CumLaude);
+    expect(LatinHonorsTier::forGwa(1.76))->toBeNull();
 });
 
 test('a student whose GWA is above the cutoff is excluded', function () {

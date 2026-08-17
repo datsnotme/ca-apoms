@@ -15,7 +15,15 @@ interface ProspectRow {
     };
     gwa: number;
     completion_percentage: number;
+    tier: 'summa_cum_laude' | 'magna_cum_laude' | 'cum_laude';
+    tier_label: string;
 }
+
+const TIER_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'info'> = {
+    summa_cum_laude: 'success',
+    magna_cum_laude: 'info',
+    cum_laude: 'neutral',
+};
 
 export default function LatinHonors({
     prospects,
@@ -33,7 +41,7 @@ export default function LatinHonors({
             <Card>
                 <CardHeader
                     title="Latin Honors Prospects"
-                    description={`Active students with a complete curriculum, no unresolved deficiencies, and a GWA between ${minGwa.toFixed(2)} and ${maxGwa.toFixed(2)}. Computed live — nothing here is an award decision; a registrar or committee still confirms eligibility manually.`}
+                    description={`Active students with a complete curriculum, no unresolved deficiencies, and a GWA between ${minGwa.toFixed(2)} and ${maxGwa.toFixed(2)}, tiered as Summa Cum Laude (1.00–1.20), Magna Cum Laude (1.21–1.45), or Cum Laude (1.46–1.75). Computed live — nothing here is an award decision; a registrar or committee still confirms eligibility manually.`}
                 />
 
                 {prospects.length === 0 ? (
@@ -52,6 +60,7 @@ export default function LatinHonors({
                                     <th scope="col" className="px-5 py-2.5">Program</th>
                                     <th scope="col" className="px-5 py-2.5">Year Level</th>
                                     <th scope="col" className="px-5 py-2.5">GWA</th>
+                                    <th scope="col" className="px-5 py-2.5">Tier</th>
                                     <th scope="col" className="px-5 py-2.5 text-right">Actions</th>
                                 </tr>
                             </thead>
@@ -63,8 +72,9 @@ export default function LatinHonors({
                                         <td className="px-5 py-2.5">{p.student.department?.name ?? '—'}</td>
                                         <td className="px-5 py-2.5">{p.student.program?.name ?? '—'}</td>
                                         <td className="px-5 py-2.5">{p.student.year_level?.label ?? '—'}</td>
+                                        <td className="px-5 py-2.5 font-mono">{p.gwa.toFixed(2)}</td>
                                         <td className="px-5 py-2.5">
-                                            <Badge variant="success">{p.gwa.toFixed(2)}</Badge>
+                                            <Badge variant={TIER_VARIANT[p.tier] ?? 'neutral'}>{p.tier_label}</Badge>
                                         </td>
                                         <td className="px-5 py-2.5 text-right">
                                             <Link

@@ -28,6 +28,8 @@ class LatinHonorsController extends Controller
                 ],
                 'gwa' => $row['gwa'],
                 'completion_percentage' => $row['completion_percentage'],
+                'tier' => $row['tier']->value,
+                'tier_label' => $row['tier']->label(),
             ]);
 
         return Inertia::render('GraduationCandidates/LatinHonors', [

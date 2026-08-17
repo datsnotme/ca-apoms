@@ -1341,12 +1341,21 @@ Deliberately **not** built as an extension of the existing `GraduationCandidate`
   their own department) rather than `GraduationCandidate::scopeVisibleTo()`'s evaluator-assignment
   scoping, since a Latin Honors prospect may not have any `GraduationCandidate` row (and therefore no
   assigned competency evaluators) at all.
-- New: `App\Services\LatinHonorsService`, `App\Http\Controllers\Graduation\LatinHonorsController`,
+- **Tier labels** (`App\Enums\LatinHonorsTier`): Summa Cum Laude (1.00–1.20), Magna Cum Laude
+  (1.21–1.45), Cum Laude (1.46–1.75) — the three-way split commonly used across Philippine
+  higher-education institutions, applied within the existing 1.00–1.75 qualifying band rather than
+  changing it. `LatinHonorsTier::forGwa()` is a pure boundary lookup, not stored anywhere; adjust the
+  cutoffs there directly if this college's actual policy differs. Tested independently of the
+  quarter-point (1.00/1.25/1.50/.../3.00) seeded grading scale, since realistic per-course grades
+  can't land a weighted GWA exactly on a boundary like 1.21 or 1.46 without contrived multi-course
+  unit weighting — the boundary logic is verified directly against the enum instead.
+- New: `App\Services\LatinHonorsService`, `App\Enums\LatinHonorsTier`,
+  `App\Http\Controllers\Graduation\LatinHonorsController`,
   `GET /latin-honors`, `resources/js/Pages/GraduationCandidates/LatinHonors.tsx`. Verified via
   `tests/Feature/LatinHonorsTest.php` (qualifying GWA, GWA-above-cutoff exclusion,
   unresolved-deficiency exclusion, incomplete-curriculum exclusion, department-scoped visibility,
-  permission gate) plus a manual browser check confirming the sidebar entry and empty-state render
-  correctly against the real dev database.
+  permission gate, tier-boundary resolution) plus a manual browser check confirming the sidebar entry,
+  updated description text, and empty-state render correctly against the real dev database.
 
 ## Documentation Scoping
 

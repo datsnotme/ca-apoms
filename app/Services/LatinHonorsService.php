@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LatinHonorsTier;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -36,7 +37,7 @@ class LatinHonorsService
     public function __construct(private readonly ProgressComputationService $progress) {}
 
     /**
-     * @return Collection<int, array{student: Student, gwa: float, completion_percentage: float}>
+     * @return Collection<int, array{student: Student, gwa: float, completion_percentage: float, tier: LatinHonorsTier}>
      */
     public function identifyProspects(User $user): Collection
     {
@@ -62,6 +63,7 @@ class LatinHonorsService
                 && $row['gwa'] !== null
                 && $row['gwa'] >= self::MIN_QUALIFYING_GWA
                 && $row['gwa'] <= self::MAX_QUALIFYING_GWA)
+            ->map(fn (array $row) => [...$row, 'tier' => LatinHonorsTier::forGwa($row['gwa'])])
             ->sortBy('gwa')
             ->values();
     }
